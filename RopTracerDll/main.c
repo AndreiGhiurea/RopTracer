@@ -70,7 +70,12 @@ APIENTRY DllMain(
         printf(".textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
 
         // Modify .text section right to read/write/execute from read/execute
-        if (!VirtualProtect((LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress), pTextSection->Misc.VirtualSize, PAGE_EXECUTE_READWRITE, &oldPageRights))
+        if (!VirtualProtect(
+            (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
+            pTextSection->Misc.VirtualSize,
+            PAGE_EXECUTE_READWRITE,
+            &oldPageRights)
+            )
         {
             MessageBox(NULL, "VirtualProtect failed. Aborting", "ROProtect.dll", MB_ICONERROR);
             return FALSE;
@@ -90,8 +95,11 @@ APIENTRY DllMain(
         const ZyanUSize length = pTextSection->Misc.VirtualSize;
         ZydisDecodedInstruction instruction;
 
-        while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, (PVOID)(gExeFile.EntryPoint + offset), length - offset,
-            &instruction)))
+        while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(
+            &decoder, 
+            (PVOID)(gExeFile.EntryPoint + offset), length - offset,
+            &instruction))
+            )
         {
             if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
             {
@@ -114,7 +122,12 @@ APIENTRY DllMain(
 
         // Restore page rights after patching instructions
         DWORD newOldPageRights;
-        if (!VirtualProtect((LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress), pTextSection->Misc.VirtualSize, oldPageRights, &newOldPageRights))
+        if (!VirtualProtect(
+            (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
+            pTextSection->Misc.VirtualSize, 
+            oldPageRights, 
+            &newOldPageRights)
+            )
         {
             MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
             return FALSE;
@@ -128,7 +141,12 @@ APIENTRY DllMain(
         if (pTextSection != NULL && oldPageRights != 0)
         {
             DWORD newOldPageRights;
-            if (!VirtualProtect((LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress), pTextSection->Misc.VirtualSize, oldPageRights, &newOldPageRights))
+            if (!VirtualProtect(
+                (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
+                pTextSection->Misc.VirtualSize,
+                oldPageRights,
+                &newOldPageRights)
+                )
             {
                 MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
             }
