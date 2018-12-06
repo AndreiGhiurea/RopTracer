@@ -28,8 +28,9 @@ typedef unsigned __int64 QWORD, *PQWORD;
 typedef struct _RET_PATCH {
     LIST_ENTRY Link;
     BOOLEAN Disabled;
-    BYTE OriginalOpcode;
     QWORD Address;
+    BYTE InstructionBytes[16];
+    ZydisDecodedInstruction Instruction;
 } RET_PATCH, *PRET_PATCH;
 
 typedef struct _EXE_FILE {

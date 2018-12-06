@@ -36,9 +36,12 @@ BreakpointHandler(
                 // Do some checks
                 printf("[INFO] Found the patch. Do some checks!\n");
 
-                *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->OriginalOpcode;
-                // EmulateRetInstruction(ExceptionInfo);
-                // ExceptionInfo->ContextRecord->EFlags |= 0x100;
+                *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->InstructionBytes[0];
+                for (int i = 0; i < pRetPatch->Instruction.length; i++)
+                {
+                    *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pRetPatch->InstructionBytes[i];
+                }
+
                 printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
                 returnValue = EXCEPTION_CONTINUE_EXECUTION;
             }
@@ -53,6 +56,8 @@ BreakpointHandler(
         return EXCEPTION_CONTINUE_EXECUTION;
         break;
     default:
+        printf("EXCEPTION ADDRESS: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+        printf("EXCEPTION CODE: 0x%08lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
         MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
         return EXCEPTION_EXECUTE_HANDLER;
         break;

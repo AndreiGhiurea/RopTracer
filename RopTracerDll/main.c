@@ -116,15 +116,20 @@ APIENTRY DllMain(
                 ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
                     runtime_address);
                 printf("%s\n", buffer);
-                                
                 // Allocate and initialize a RET patch structure for the list
                 PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
                 retPatchEntry->Address = runtime_address;
                 retPatchEntry->Disabled = FALSE;
-                retPatchEntry->OriginalOpcode = *((PBYTE)runtime_address);
+                retPatchEntry->Instruction = instruction;
 
                 // Patch RET with a INT3
-                *((PBYTE)runtime_address) = 0xCC;
+                retPatchEntry->InstructionBytes[0] = *(PBYTE)runtime_address;
+                *((PBYTE)runtime_address) = 0xCC; // INT3
+                for (int i = 1; i < instruction.length; i++)
+                {
+                    retPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
+                    *((PBYTE)runtime_address + i) = 0x90; // NOP
+                }
 
                 InsertTailList(&gExeFile.RetPatchList, &retPatchEntry->Link);
             }
@@ -132,19 +137,6 @@ APIENTRY DllMain(
             offset += instruction.length;
             runtime_address += instruction.length;
         }
-
-        //// Restore page rights after patching instructions
-        //DWORD newOldPageRights;
-        //if (!VirtualProtect(
-        //    (LPVOID)((SIZE_T)gExeFile.ImageBase + pTextSection->VirtualAddress),
-        //    pTextSection->Misc.VirtualSize, 
-        //    oldPageRights, 
-        //    &newOldPageRights)
-        //    )
-        //{
-        //    MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
-        //    return FALSE;
-        //}
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
