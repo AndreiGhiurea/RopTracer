@@ -29,20 +29,16 @@ main(
     // 
     // return !bErr;
 
-#if _WIN64
     HMODULE hMod = LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\RopTracerDll.dll");
-#elif _WIN32
-    HMODULE hMod = LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\Win32\\Debug\\RopTracerDll.dll");
-#endif
 
     if (!hMod)
     {
         DWORD dw = GetLastError();
-        printf("The library could not load.  Error %d", dw);
+        printf("[LOADER] The library could not load.  Error %d\n", dw);
     }
     else
     {
-        printf("Library loaded successfully");
+        printf("[LOADER] Library loaded successfully\n");
         FreeLibrary(hMod);
     }
 

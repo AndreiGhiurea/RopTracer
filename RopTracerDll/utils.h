@@ -1,5 +1,7 @@
 #pragma once
 
+// x86 disassembler
+#include <Zydis/Zydis.h>
 // We do this in order to include both 'windows.h' and 'ntstatus.h'
 #define WIN32_NO_STATUS
 #include <windows.h>
@@ -7,6 +9,9 @@
 
 #include    "stdio.h"
 #include    <ntstatus.h>
+
+// ASM Functions
+extern int _emulateRetInstruction(PEXCEPTION_POINTERS ExceptionInfo, int a);
 
 #ifndef     CHAR
 typedef char CHAR, *PCHAR;
@@ -34,6 +39,8 @@ typedef struct _EXE_FILE {
     QWORD EntryPoint;
     LIST_ENTRY RetPatchList;
 } EXE_FILE, *PEXE_FILE;
+
+extern EXE_FILE gExeFile;
 
 // Array of addresses
 #define     STATUS_NON_EXISTENT_ENTRY               ((NTSTATUS)0x10000000)
@@ -164,9 +171,3 @@ InsertHeadList(
     ListHead->Flink = Entry;
     return;
 }
-
-#define LOG_FILE L"C:\\ROProtect.log"
-void WriteLog(PCHAR Text);
-void WriteLogW(PWCHAR Text);
-#define LOG(x) WriteLog(x);
-#define LOG_W(x) WriteLogW(x);

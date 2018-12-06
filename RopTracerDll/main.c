@@ -1,62 +1,5 @@
 #include "utils.h"
-#include <Zydis/Zydis.h>
-
-EXE_FILE gExeFile;
-
-LONG WINAPI
-BreakpointHandler(
-    _In_ PEXCEPTION_POINTERS ExceptionInfo
-    )
-{
-    LONG returnValue = EXCEPTION_EXECUTE_HANDLER;
-    DWORD exceptioncode;
-    PLIST_ENTRY list;
-    BOOL found = FALSE;
-
-    exceptioncode = ExceptionInfo->ExceptionRecord->ExceptionCode;
-
-    switch (exceptioncode)
-    {
-    case EXCEPTION_BREAKPOINT:
-        MessageBox(NULL, "Breakpoint Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
-        
-        list = gExeFile.RetPatchList.Flink;
-        while (list != &gExeFile.RetPatchList && !found)
-        {
-            PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
-
-            if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pRetPatch->Address)
-            {
-                found = TRUE;
-
-                if (pRetPatch->Disabled)
-                {
-                    goto _continue;
-                }
-
-                // Found the patch
-                // Do some checks
-                printf("Found the patch. Do some checks!\n");
-
-                *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->OriginalOpcode;
-                returnValue = EXCEPTION_CONTINUE_EXECUTION;
-                printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
-            }
-
-        _continue:
-            list = list->Flink;
-        }
-
-        // ExceptionInfo->ContextRecord->Rip++;
-        break;
-    default:
-        MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
-        return EXCEPTION_EXECUTE_HANDLER;
-        break;
-    }
-
-    return returnValue;
-}
+#include "handler.h"
 
 BOOL
 APIENTRY DllMain(
@@ -83,20 +26,20 @@ APIENTRY DllMain(
 
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
 
-        strcat_s(text, 256, "ROProtect.dll has been successfully injected in target with pid: ");
+        strcat_s(text, 256, "RopTracerDll.dll has been successfully injected in target with pid: ");
         strcat_s(text, 256, number);
         _itoa_s(GetCurrentProcessId(), number, 20, 16);
         strcat_s(text, 256, " (0x");
         strcat_s(text, 256, number);
         strcat_s(text, 256, ")");
 
-        // MessageBox(NULL, text, "ROProtect.dll", MB_ICONINFORMATION);
+        // MessageBox(NULL, text, "RopTracerDll.dll", MB_ICONINFORMATION);
 
         // Get current .exe image base address
         HMODULE hCurrentModule = GetModuleHandle(NULL);
         if (NULL == hCurrentModule)
         {
-            MessageBox(NULL, "GetModuleHandle failed. Aborting", "ROProtect.dll", MB_ICONERROR);
+            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
         }
         gExeFile.ImageBase = (QWORD)hCurrentModule;
 
@@ -121,14 +64,14 @@ APIENTRY DllMain(
 
         if (NULL == pTextSection)
         {
-            MessageBox(NULL, "Couldn't find .text section. Aborting", "ROProtect.dll", MB_ICONERROR);
+            MessageBox(NULL, "Couldn't find .text section. Aborting", "RopTracerDll.dll", MB_ICONERROR);
             return FALSE;
         }
 
-        printf("ImageBase: 0x%016llx\n", gExeFile.ImageBase);
-        printf("EntryPointRva: 0x%08lx\n", gExeFile.EntryPointRva);
-        printf("EntryPoint: 0x%016llx\n", gExeFile.EntryPoint);
-        printf(".textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
+        printf("[INFO] ImageBase: 0x%016llx\n", gExeFile.ImageBase);
+        printf("[INFP] EntryPointRva: 0x%08lx\n", gExeFile.EntryPointRva);
+        printf("[INFO] EntryPoint: 0x%016llx\n", gExeFile.EntryPoint);
+        printf("[INFO] .textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
 
         // Modify .text section right to read/write/execute from read/execute
         if (!VirtualProtect(
@@ -138,7 +81,7 @@ APIENTRY DllMain(
             &oldPageRights)
             )
         {
-            MessageBox(NULL, "VirtualProtect failed. Aborting", "ROProtect.dll", MB_ICONERROR);
+            MessageBox(NULL, "VirtualProtect failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
             return FALSE;
         }
 
@@ -166,7 +109,7 @@ APIENTRY DllMain(
             if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
             {
                 // Print current instruction pointer.
-                printf("0x%016llx   ", runtime_address);
+                printf("[DISASM] 0x%016llx   ", runtime_address);
 
                 // Format & print the binary instruction structure to human readable format
                 char buffer[256];
@@ -179,6 +122,7 @@ APIENTRY DllMain(
                 retPatchEntry->Address = runtime_address;
                 retPatchEntry->Disabled = FALSE;
                 retPatchEntry->OriginalOpcode = *((PBYTE)runtime_address);
+
                 // Patch RET with a INT3
                 *((PBYTE)runtime_address) = 0xCC;
 
@@ -204,7 +148,7 @@ APIENTRY DllMain(
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
-        MessageBox(NULL, "DLL is detaching", "ROProtect.dll", MB_ICONINFORMATION);
+        MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);
 
         // Restore .text section rights before detaching the dll
         if (pTextSection != NULL && oldPageRights != 0)
@@ -217,7 +161,7 @@ APIENTRY DllMain(
                 &newOldPageRights)
                 )
             {
-                MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
+                MessageBox(NULL, "VirtualProtect failed", "RopTracerDll.dll", MB_ICONERROR);
             }
         }
     }

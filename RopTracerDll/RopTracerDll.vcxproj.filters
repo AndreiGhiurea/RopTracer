@@ -4,7 +4,13 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="handler.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="emu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -20,6 +26,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="handler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
