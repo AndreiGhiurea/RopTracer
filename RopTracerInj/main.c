@@ -4,31 +4,37 @@ INT
 main(
     INT Argc,
     PCHAR Argv[]
-    )
+)
 {
     UNREFERENCED_PARAMETER(Argv);
     UNREFERENCED_PARAMETER(Argc);
-    /*DWORD pid = 0;
-    PCHAR pDllPath = NULL;
-    BOOL bErr;
 
-    if (Argc != 3)
-    {
-        printf("Usage %s <pid> <dll path>\n", Argv[0]);
-        return -1;
-    }
+    // DWORD pid = 0;
+    // PCHAR pDllPath = NULL;
+    // BOOL bErr;
+    // 
+    // if (Argc != 3)
+    // {
+    //     printf("Usage %s <pid> <dll path>\n", Argv[0]);
+    //     return -1;
+    // }
+    // 
+    // pid = strtoul(Argv[1], NULL, 0);
+    // pDllPath = Argv[2];
+    // 
+    // printf("Injecting `%s` into %d...\n", pDllPath, pid);
+    // 
+    // bErr = InjectDllIntoProcess(pid, pDllPath);
+    // printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
+    // 
+    // return !bErr;
 
-    pid = strtoul(Argv[1], NULL, 0);
-    pDllPath = Argv[2];
-
-    printf("Injecting `%s` into %d...\n", pDllPath, pid);
-
-    bErr = InjectDllIntoProcess(pid, pDllPath);
-    printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
-
-    return !bErr;*/
-
+#if _WIN64
     HMODULE hMod = LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\RopTracerDll.dll");
+#elif _WIN32
+    HMODULE hMod = LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\Win32\\Debug\\RopTracerDll.dll");
+#endif
+
     if (!hMod)
     {
         DWORD dw = GetLastError();

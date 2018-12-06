@@ -3,12 +3,67 @@
 
 EXE_FILE gExeFile;
 
+LONG WINAPI
+BreakpointHandler(
+    _In_ PEXCEPTION_POINTERS ExceptionInfo
+    )
+{
+    LONG returnValue = EXCEPTION_EXECUTE_HANDLER;
+    DWORD exceptioncode;
+    PLIST_ENTRY list;
+    BOOL found = FALSE;
+
+    exceptioncode = ExceptionInfo->ExceptionRecord->ExceptionCode;
+
+    switch (exceptioncode)
+    {
+    case EXCEPTION_BREAKPOINT:
+        MessageBox(NULL, "Breakpoint Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
+        
+        list = gExeFile.RetPatchList.Flink;
+        while (list != &gExeFile.RetPatchList && !found)
+        {
+            PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
+
+            if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pRetPatch->Address)
+            {
+                found = TRUE;
+
+                if (pRetPatch->Disabled)
+                {
+                    goto _continue;
+                }
+
+                // Found the patch
+                // Do some checks
+                printf("Found the patch. Do some checks!\n");
+
+                *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->OriginalOpcode;
+                returnValue = EXCEPTION_CONTINUE_EXECUTION;
+                printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+            }
+
+        _continue:
+            list = list->Flink;
+        }
+
+        // ExceptionInfo->ContextRecord->Rip++;
+        break;
+    default:
+        MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
+        return EXCEPTION_EXECUTE_HANDLER;
+        break;
+    }
+
+    return returnValue;
+}
+
 BOOL
 APIENTRY DllMain(
     _In_        void*           _DllHandle,
     _In_        unsigned long   _Reason,
     _In_opt_    void*           _Reserved
-)
+    )
 {
     UNREFERENCED_PARAMETER(_DllHandle);
     UNREFERENCED_PARAMETER(_Reserved);
@@ -20,6 +75,12 @@ APIENTRY DllMain(
   
     if (DLL_PROCESS_ATTACH == _Reason)
     {
+        // Initialize gExeFile list head for RET patches
+        InitializeListHead(&gExeFile.RetPatchList);
+
+        // Register critical exception handler
+        AddVectoredExceptionHandler(1, BreakpointHandler);
+
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
 
         strcat_s(text, 256, "ROProtect.dll has been successfully injected in target with pid: ");
@@ -89,7 +150,7 @@ APIENTRY DllMain(
         ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 
         // Loop over the instructions from entry point and replace RET instructions with INT3
-        ZyanU64 runtime_address = gExeFile.EntryPoint;
+        ZyanUPointer runtime_address = gExeFile.EntryPoint;
         ZyanUSize offset = 0;
         // Length to decode
         const ZyanUSize length = pTextSection->Misc.VirtualSize;
@@ -97,7 +158,8 @@ APIENTRY DllMain(
 
         while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(
             &decoder, 
-            (PVOID)(gExeFile.EntryPoint + offset), length - offset,
+            (PVOID)(gExeFile.EntryPoint + offset), 
+            length - offset,
             &instruction))
             )
         {
@@ -111,33 +173,40 @@ APIENTRY DllMain(
                 ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
                     runtime_address);
                 printf("%s\n", buffer);
-                
+                                
+                // Allocate and initialize a RET patch structure for the list
+                PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+                retPatchEntry->Address = runtime_address;
+                retPatchEntry->Disabled = FALSE;
+                retPatchEntry->OriginalOpcode = *((PBYTE)runtime_address);
                 // Patch RET with a INT3
                 *((PBYTE)runtime_address) = 0xCC;
+
+                InsertTailList(&gExeFile.RetPatchList, &retPatchEntry->Link);
             }
 
             offset += instruction.length;
             runtime_address += instruction.length;
         }
 
-        // Restore page rights after patching instructions
-        DWORD newOldPageRights;
-        if (!VirtualProtect(
-            (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
-            pTextSection->Misc.VirtualSize, 
-            oldPageRights, 
-            &newOldPageRights)
-            )
-        {
-            MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
-            return FALSE;
-        }
+        //// Restore page rights after patching instructions
+        //DWORD newOldPageRights;
+        //if (!VirtualProtect(
+        //    (LPVOID)((SIZE_T)gExeFile.ImageBase + pTextSection->VirtualAddress),
+        //    pTextSection->Misc.VirtualSize, 
+        //    oldPageRights, 
+        //    &newOldPageRights)
+        //    )
+        //{
+        //    MessageBox(NULL, "VirtualProtect failed", "ROProtect.dll", MB_ICONERROR);
+        //    return FALSE;
+        //}
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
         MessageBox(NULL, "DLL is detaching", "ROProtect.dll", MB_ICONINFORMATION);
 
-        // Restore .text section rights if the dll is detaching before it was able to restore them normally
+        // Restore .text section rights before detaching the dll
         if (pTextSection != NULL && oldPageRights != 0)
         {
             DWORD newOldPageRights;
