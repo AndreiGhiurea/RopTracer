@@ -161,11 +161,6 @@
     <ClInclude Include="handler.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
-  <ItemGroup>
-    <YASM Include="emu.asm">
-      <FileType>Document</FileType>
-    </YASM>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\vsyasm.targets" />

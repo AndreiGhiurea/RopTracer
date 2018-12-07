@@ -1,10 +1,22 @@
 #include "emu.h"
 
-void EmulateRetInstruction(PEXCEPTION_POINTERS ExceptionInfo)
+STATUS EmulateInstruction(ZydisDecodedInstruction Instruction, PEXCEPTION_POINTERS ExceptionInfo)
 {
-    QWORD retAddress;
+    STATUS status;
 
-    retAddress = *(PDWORD64)ExceptionInfo->ContextRecord->Rsp;
-    printf("RET ADDRESS: 0x%016llx\n", retAddress);
-    ExceptionInfo->ContextRecord->Rip = retAddress;
+    switch (Instruction.mnemonic)
+    {
+    case ZYDIS_MNEMONIC_RET:
+        // Get the top of the stack and put it in RIP
+        ExceptionInfo->ContextRecord->Rip = *(PDWORD64)ExceptionInfo->ContextRecord->Rsp;
+        ExceptionInfo->ContextRecord->Rsp += 8;
+        status = STATUS_SUCCESS;
+        break;
+    default:
+        printf("[EMU] Instruction not supported\n");
+        status = STATUS_UNSUCCESSFUL;
+        break;
+    }
+
+    return status;
 }

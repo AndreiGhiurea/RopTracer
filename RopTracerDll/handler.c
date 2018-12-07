@@ -10,6 +10,7 @@ BreakpointHandler(
     DWORD exceptioncode;
     PLIST_ENTRY list;
     BOOL found = FALSE;
+    STATUS status = STATUS_SUCCESS;
 
     exceptioncode = ExceptionInfo->ExceptionRecord->ExceptionCode;
 
@@ -33,13 +34,20 @@ BreakpointHandler(
                 }
 
                 // Found the patch
-                // Do some checks
-                printf("[INFO] Found the patch. Do some checks!\n");
+                // TODO: Some checks
+                printf("[INFO] Found the patch!\n");
 
-                *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->InstructionBytes[0];
-                for (int i = 0; i < pRetPatch->Instruction.length; i++)
+                /// Patch original instruction
+                // *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->InstructionBytes[0];
+                // for (int i = 0; i < pRetPatch->Instruction.length; i++)
+                // {
+                //     *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pRetPatch->InstructionBytes[i];
+                // }
+
+                status = EmulateInstruction(pRetPatch->Instruction, ExceptionInfo);
+                if (!SUCCESS(status))
                 {
-                    *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pRetPatch->InstructionBytes[i];
+                    printf("[ERROR] EmulateInstruction failed!\n");
                 }
 
                 printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);

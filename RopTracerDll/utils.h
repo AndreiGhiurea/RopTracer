@@ -10,9 +10,6 @@
 #include    "stdio.h"
 #include    <ntstatus.h>
 
-// ASM Functions
-extern int _emulateRetInstruction(PEXCEPTION_POINTERS ExceptionInfo, int a);
-
 #ifndef     CHAR
 typedef char CHAR, *PCHAR;
 #endif
@@ -42,6 +39,9 @@ typedef struct _EXE_FILE {
 } EXE_FILE, *PEXE_FILE;
 
 extern EXE_FILE gExeFile;
+
+#define STATUS           NTSTATUS
+#define SUCCESS(x)       ((x)>=0)
 
 // Array of addresses
 #define     STATUS_NON_EXISTENT_ENTRY               ((NTSTATUS)0x10000000)

@@ -118,6 +118,12 @@ APIENTRY DllMain(
                 printf("%s\n", buffer);
                 // Allocate and initialize a RET patch structure for the list
                 PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+                if (NULL == retPatchEntry)
+                {
+                    MessageBox(NULL, "VirtualAlloc failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+                    return FALSE;
+                }
+
                 retPatchEntry->Address = runtime_address;
                 retPatchEntry->Disabled = FALSE;
                 retPatchEntry->Instruction = instruction;

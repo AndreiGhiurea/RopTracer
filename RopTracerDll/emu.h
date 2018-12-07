@@ -1,4 +1,4 @@
 #pragma once
 #include "utils.h"
 
-void EmulateRetInstruction(PEXCEPTION_POINTERS ExceptionInfo);
+STATUS EmulateInstruction(ZydisDecodedInstruction Instruction, PEXCEPTION_POINTERS ExceptionInfo);
