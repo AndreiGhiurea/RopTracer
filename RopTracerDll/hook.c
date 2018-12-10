@@ -1,11 +1,12 @@
 #include "hook.h"
+#include "Zydis\DecoderTypes.h"
 
 STATUS RtrFreeHooks(VOID)
 {
     LIST_ENTRY *list;
 
-    list = gExeFile.RetPatchList.Flink;
-    while (list != &gExeFile.RetPatchList)
+    list = gExeFile.InstructionPatchList.Flink;
+    while (list != &gExeFile.InstructionPatchList)
     {
         PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
 
@@ -31,8 +32,8 @@ STATUS RtrUnhookAddress(QWORD Address)
     DWORD oldPageRights = 0, newOldPageRights = 0;
     BOOL found = FALSE;
 
-    list = gExeFile.RetPatchList.Flink;
-    while (list != &gExeFile.RetPatchList && !found)
+    list = gExeFile.InstructionPatchList.Flink;
+    while (list != &gExeFile.InstructionPatchList && !found)
     {
         PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
 
@@ -159,7 +160,7 @@ STATUS RtrHookAddress(QWORD Address)
                 *((PBYTE)runtime_address + i) = 0x90; // NOP
             }
 
-            InsertTailList(&gExeFile.RetPatchList, &retPatchEntry->Link);
+            InsertTailList(&gExeFile.InstructionPatchList, &retPatchEntry->Link);
         }
 
         // Restore old page rights
@@ -195,8 +196,8 @@ STATUS RtrUnhookRegion(QWORD Address, DWORD Size)
         return STATUS_UNSUCCESSFUL;
     }
 
-    list = gExeFile.RetPatchList.Flink;
-    while (list != &gExeFile.RetPatchList)
+    list = gExeFile.InstructionPatchList.Flink;
+    while (list != &gExeFile.InstructionPatchList)
     {
         PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
 
@@ -279,6 +280,18 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
     {
         if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
         {
+            // Special case
+            if (instruction.length == 3 &&
+                *((PBYTE)runtime_address) == 0xC2 &&
+                *((PBYTE)runtime_address + 1) == 0x00 &&
+                *((PBYTE)runtime_address + 2) == 0x00
+                )
+            {
+                offset += instruction.length;
+                runtime_address += instruction.length;
+                continue;
+            }
+
             // Print current instruction pointer.
             printf("[DISASM] 0x%016llx   ", runtime_address);
 
@@ -288,28 +301,29 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
                 runtime_address);
             printf("%s\n", buffer);
 
+
             // Allocate and initialize a RET patch structure for the list
-            PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-            if (NULL == retPatchEntry)
+            PRET_PATCH instructionPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+            if (NULL == instructionPatchEntry)
             {
                 MessageBox(NULL, "VirtualAlloc failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
                 return STATUS_UNSUCCESSFUL;
             }
 
-            retPatchEntry->Address = runtime_address;
-            retPatchEntry->Disabled = FALSE;
-            retPatchEntry->Instruction = instruction;
+            instructionPatchEntry->Address = runtime_address;
+            instructionPatchEntry->Disabled = FALSE;
+            instructionPatchEntry->Instruction = instruction;
 
             // Patch RET with a INT3
-            retPatchEntry->InstructionBytes[0] = *(PBYTE)runtime_address;
+            instructionPatchEntry->InstructionBytes[0] = *(PBYTE)runtime_address;
             *((PBYTE)runtime_address) = 0xCC; // INT3
             for (int i = 1; i < instruction.length; i++)
             {
-                retPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
+                instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
                 *((PBYTE)runtime_address + i) = 0x90; // NOP
             }
 
-            InsertTailList(&gExeFile.RetPatchList, &retPatchEntry->Link);
+            InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
         }
 
         offset += instruction.length;

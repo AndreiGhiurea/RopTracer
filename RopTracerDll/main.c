@@ -20,7 +20,7 @@ DllMain(
     if (DLL_PROCESS_ATTACH == _Reason)
     {
         // Initialize gExeFile list head for RET patches
-        InitializeListHead(&gExeFile.RetPatchList);
+        InitializeListHead(&gExeFile.InstructionPatchList);
 
         // Register critical exception handler
         AddVectoredExceptionHandler(1, BreakpointHandler);
@@ -86,7 +86,7 @@ DllMain(
         status = RtrFreeHooks();
         if (!SUCCEEDED(status))
         {
-            MessageBox(NULL, "RtrHookRegion failed.", "RopTracerDll.dll", MB_ICONERROR);
+            MessageBox(NULL, "RtrFreeHooks failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
 
         MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);

@@ -35,7 +35,7 @@ typedef struct _EXE_FILE {
     DWORD TextSectionRva;
     QWORD ImageBase;
     QWORD EntryPoint;
-    LIST_ENTRY RetPatchList;
+    LIST_ENTRY InstructionPatchList;
 } EXE_FILE, *PEXE_FILE;
 
 extern EXE_FILE gExeFile;

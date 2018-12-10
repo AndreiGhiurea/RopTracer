@@ -17,18 +17,18 @@ BreakpointHandler(
     switch (exceptioncode)
     {
     case EXCEPTION_BREAKPOINT:
-        MessageBox(NULL, "Breakpoint Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
+        // MessageBox(NULL, "Breakpoint Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
         
-        list = gExeFile.RetPatchList.Flink;
-        while (list != &gExeFile.RetPatchList && !found)
+        list = gExeFile.InstructionPatchList.Flink;
+        while (list != &gExeFile.InstructionPatchList && !found)
         {
-            PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
+            PRET_PATCH pInstructionPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
 
-            if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pRetPatch->Address)
+            if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pInstructionPatch->Address)
             {
                 found = TRUE;
 
-                if (pRetPatch->Disabled)
+                if (pInstructionPatch->Disabled)
                 {
                     goto _continue;
                 }
@@ -38,13 +38,13 @@ BreakpointHandler(
                 printf("[INFO] Found the patch!\n");
 
                 /// Patch original instruction
-                // *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pRetPatch->InstructionBytes[0];
-                // for (int i = 0; i < pRetPatch->Instruction.length; i++)
+                // *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pInstructionPatch->InstructionBytes[0];
+                // for (int i = 0; i < pInstructionPatch->Instruction.length; i++)
                 // {
-                //     *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pRetPatch->InstructionBytes[i];
+                //     *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pInstructionPatch->InstructionBytes[i];
                 // }
 
-                status = EmulateInstruction(pRetPatch->Instruction, ExceptionInfo);
+                status = EmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
                 if (!SUCCESS(status))
                 {
                     printf("[ERROR] EmulateInstruction failed!\n");
