@@ -1,4 +1,32 @@
 #include "injector.h"
+#pragma check_stack(off)
+
+VOID
+MyOpenFile(PCHAR FilePath, FILE** File, DWORD* Length)
+{
+    if (fopen_s(File, FilePath, "rb"))
+    {
+        printf("[ERROR] fopen_s failed!\n");
+        return;
+    }
+
+    fseek(*File, 0, SEEK_END);
+    *Length = ftell(*File);
+    rewind(*File);
+
+    return;
+}
+
+VOID
+ReadFromFile(FILE* File, DWORD Length)
+{
+    CHAR smallBuffer[8192] = { 0 };
+
+    printf("Reading %d characters\n", Length);
+    fread_s(smallBuffer, Length-1, 1, Length-1, File);
+
+    return;
+}
 
 INT
 main(
@@ -28,19 +56,29 @@ main(
     // printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
     // 
     // return !bErr;
+    
+    // HMODULE hMod = NULL;
+    LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\RopTracerDll.dll");
+    // if (!hMod)
+    // {
+    //     DWORD dw = GetLastError();
+    //     printf("[LOADER] The library could not load.  Error %d\n", dw);
+    // }
+    
+    FILE* file;
+    DWORD length;
+    PCHAR fpath = "C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\rop-xor.txt";
+    MyOpenFile(fpath, &file, &length);
 
-    HMODULE hMod = LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\RopTracerDll.dll");
+    ReadFromFile(file, length);
 
-    if (!hMod)
-    {
-        DWORD dw = GetLastError();
-        printf("[LOADER] The library could not load.  Error %d\n", dw);
-    }
-    else
-    {
-        printf("[LOADER] Library loaded successfully\n");
-        FreeLibrary(hMod);
-    }
+    fclose(file);
 
+    // if (hMod)
+    // {
+    //     printf("[LOADER] Library loaded successfully\n");
+    //     FreeLibrary(hMod);
+    // }
+    
     return 0;
 }
