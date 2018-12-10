@@ -23,7 +23,7 @@ DllMain(
         InitializeListHead(&gExeFile.InstructionPatchList);
 
         // Register critical exception handler
-        AddVectoredExceptionHandler(1, BreakpointHandler);
+        AddVectoredExceptionHandler(1, RtrBreakpointHandler);
 
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
 

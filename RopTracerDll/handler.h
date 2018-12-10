@@ -2,6 +2,6 @@
 #include "utils.h"
 
 LONG WINAPI
-BreakpointHandler(
+RtrBreakpointHandler(
     _In_ PEXCEPTION_POINTERS ExceptionInfo
     );

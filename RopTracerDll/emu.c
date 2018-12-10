@@ -1,7 +1,7 @@
 #include "emu.h"
 
 STATUS 
-EmulateInstruction(
+RtrEmulateInstruction(
     ZydisDecodedInstruction Instruction,
     PEXCEPTION_POINTERS ExceptionInfo
     )

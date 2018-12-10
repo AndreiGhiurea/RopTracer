@@ -2,7 +2,7 @@
 #include "emu.h"
 
 LONG WINAPI
-BreakpointHandler(
+RtrBreakpointHandler(
     _In_ PEXCEPTION_POINTERS ExceptionInfo
     )
 {
@@ -44,10 +44,10 @@ BreakpointHandler(
                 //     *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pInstructionPatch->InstructionBytes[i];
                 // }
 
-                status = EmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
+                status = RtrEmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
                 if (!SUCCESS(status))
                 {
-                    printf("[ERROR] EmulateInstruction failed!\n");
+                    printf("[ERROR] RtrEmulateInstruction failed!\n");
                 }
 
                 printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
