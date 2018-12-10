@@ -1,6 +1,10 @@
 #include "emu.h"
 
-STATUS EmulateInstruction(ZydisDecodedInstruction Instruction, PEXCEPTION_POINTERS ExceptionInfo)
+STATUS 
+EmulateInstruction(
+    ZydisDecodedInstruction Instruction,
+    PEXCEPTION_POINTERS ExceptionInfo
+    )
 {
     STATUS status;
 

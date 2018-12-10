@@ -1,8 +1,9 @@
 #include "utils.h"
 #include "handler.h"
+#include "hook.h"
 
-BOOL
-APIENTRY DllMain(
+BOOL APIENTRY
+DllMain(
     _In_        void*           _DllHandle,
     _In_        unsigned long   _Reason,
     _In_opt_    void*           _Reserved
@@ -15,6 +16,7 @@ APIENTRY DllMain(
     CHAR    number[20] = { 0 };
     DWORD   oldPageRights = 0;
     PIMAGE_SECTION_HEADER pTextSection = NULL;
+    STATUS status = NULL;
   
     if (DLL_PROCESS_ATTACH == _Reason)
     {
@@ -22,7 +24,7 @@ APIENTRY DllMain(
         InitializeListHead(&gExeFile.RetPatchList);
 
         // Register critical exception handler
-        AddVectoredExceptionHandler(1, BreakpointHandler);
+        // AddVectoredExceptionHandler(1, BreakpointHandler);
 
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
 
@@ -73,95 +75,24 @@ APIENTRY DllMain(
         printf("[INFO] EntryPoint: 0x%016llx\n", gExeFile.EntryPoint);
         printf("[INFO] .textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
 
-        // Modify .text section right to read/write/execute from read/execute
-        if (!VirtualProtect(
-            (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
-            pTextSection->Misc.VirtualSize,
-            PAGE_EXECUTE_READWRITE,
-            &oldPageRights)
-            )
+        // Hook RET instructions from .text section
+        DWORD oldPageRights;
+        status = RtrHookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize, &oldPageRights);
+        if (!SUCCEEDED(status))
         {
-            MessageBox(NULL, "VirtualProtect failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-            return FALSE;
-        }
-
-        // Initialize decoder context
-        ZydisDecoder decoder;
-        ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
-        // Initialize formatter
-        ZydisFormatter formatter;
-        ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-
-        // Loop over the instructions from entry point and replace RET instructions with INT3
-        ZyanUPointer runtime_address = gExeFile.EntryPoint;
-        ZyanUSize offset = 0;
-        // Length to decode
-        const ZyanUSize length = pTextSection->Misc.VirtualSize;
-        ZydisDecodedInstruction instruction;
-
-        while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(
-            &decoder, 
-            (PVOID)(gExeFile.EntryPoint + offset), 
-            length - offset,
-            &instruction))
-            )
-        {
-            if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
-            {
-                // Print current instruction pointer.
-                printf("[DISASM] 0x%016llx   ", runtime_address);
-
-                // Format & print the binary instruction structure to human readable format
-                char buffer[256];
-                ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
-                    runtime_address);
-                printf("%s\n", buffer);
-                // Allocate and initialize a RET patch structure for the list
-                PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-                if (NULL == retPatchEntry)
-                {
-                    MessageBox(NULL, "VirtualAlloc failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-                    return FALSE;
-                }
-
-                retPatchEntry->Address = runtime_address;
-                retPatchEntry->Disabled = FALSE;
-                retPatchEntry->Instruction = instruction;
-
-                // Patch RET with a INT3
-                retPatchEntry->InstructionBytes[0] = *(PBYTE)runtime_address;
-                *((PBYTE)runtime_address) = 0xCC; // INT3
-                for (int i = 1; i < instruction.length; i++)
-                {
-                    retPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
-                    *((PBYTE)runtime_address + i) = 0x90; // NOP
-                }
-
-                InsertTailList(&gExeFile.RetPatchList, &retPatchEntry->Link);
-            }
-
-            offset += instruction.length;
-            runtime_address += instruction.length;
+            printf("[ERROR] RtrHookRegion failed\n");
         }
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
-        MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);
 
-        // Restore .text section rights before detaching the dll
-        if (pTextSection != NULL && oldPageRights != 0)
+        status = RtrUnhookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize, oldPageRights);
+        if (!SUCCEEDED(status))
         {
-            DWORD newOldPageRights;
-            if (!VirtualProtect(
-                (LPVOID)(gExeFile.ImageBase + pTextSection->VirtualAddress),
-                pTextSection->Misc.VirtualSize,
-                oldPageRights,
-                &newOldPageRights)
-                )
-            {
-                MessageBox(NULL, "VirtualProtect failed", "RopTracerDll.dll", MB_ICONERROR);
-            }
+            printf("[ERROR] RtrUnhookRegion failed\n");
         }
+        
+        MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);
     }
 
     return TRUE;

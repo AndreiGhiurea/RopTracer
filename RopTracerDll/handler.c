@@ -66,7 +66,7 @@ BreakpointHandler(
     default:
         printf("EXCEPTION ADDRESS: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
         printf("EXCEPTION CODE: 0x%08lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-        MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
+        MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONERROR);
         return EXCEPTION_EXECUTE_HANDLER;
         break;
     }

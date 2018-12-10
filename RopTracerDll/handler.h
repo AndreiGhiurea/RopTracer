@@ -4,4 +4,4 @@
 LONG WINAPI
 BreakpointHandler(
     _In_ PEXCEPTION_POINTERS ExceptionInfo
-);
+    );
