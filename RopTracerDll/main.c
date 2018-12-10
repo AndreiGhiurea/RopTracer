@@ -14,9 +14,8 @@ DllMain(
 
     CHAR    text[256] = { 0 };
     CHAR    number[20] = { 0 };
-    DWORD   oldPageRights = 0;
     PIMAGE_SECTION_HEADER pTextSection = NULL;
-    STATUS status = NULL;
+    STATUS status = STATUS_SUCCESS;
   
     if (DLL_PROCESS_ATTACH == _Reason)
     {
@@ -24,7 +23,7 @@ DllMain(
         InitializeListHead(&gExeFile.RetPatchList);
 
         // Register critical exception handler
-        // AddVectoredExceptionHandler(1, BreakpointHandler);
+        AddVectoredExceptionHandler(1, BreakpointHandler);
 
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
 
@@ -76,22 +75,20 @@ DllMain(
         printf("[INFO] .textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
 
         // Hook RET instructions from .text section
-        DWORD oldPageRights;
-        status = RtrHookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize, &oldPageRights);
+        status = RtrHookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize);
         if (!SUCCEEDED(status))
         {
-            printf("[ERROR] RtrHookRegion failed\n");
+           MessageBox(NULL, "RtrHookRegion failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
-
-        status = RtrUnhookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize, oldPageRights);
+        status = RtrFreeHooks();
         if (!SUCCEEDED(status))
         {
-            printf("[ERROR] RtrUnhookRegion failed\n");
+            MessageBox(NULL, "RtrHookRegion failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
-        
+
         MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);
     }
 

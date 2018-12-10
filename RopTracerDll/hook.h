@@ -1,5 +1,6 @@
 #include "utils.h"
 
+STATUS RtrFreeHooks(VOID);
 STATUS RtrHookAddress(QWORD Address);
 STATUS RtrUnhookAddress(QWORD Address);
 STATUS RtrHookRegion(QWORD Address, DWORD Length);

@@ -1,5 +1,30 @@
 #include "hook.h"
 
+STATUS RtrFreeHooks(VOID)
+{
+    LIST_ENTRY *list;
+
+    list = gExeFile.RetPatchList.Flink;
+    while (list != &gExeFile.RetPatchList)
+    {
+        PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
+
+        pRetPatch->Disabled = TRUE;
+        RemoveEntryList(list);
+        list = list->Blink;
+
+        if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
+        {
+            MessageBox(NULL, "VirtualFree failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+            return STATUS_UNSUCCESSFUL;
+        }
+
+        list = list->Flink;
+    }
+
+    return STATUS_SUCCESS;
+}
+
 STATUS RtrUnhookAddress(QWORD Address)
 {
     LIST_ENTRY *list;
@@ -27,18 +52,21 @@ STATUS RtrUnhookAddress(QWORD Address)
                 MessageBox(NULL, "VirtualProtect failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
                 return STATUS_UNSUCCESSFUL;
             }
+            
+            pRetPatch->Disabled = TRUE;
+            RemoveEntryList(list);
+            list = list->Blink;
 
             // Patch original instruction
             for (int i = 0; i < pRetPatch->Instruction.length; i++)
             {
                 *((PBYTE)pRetPatch->Address + i) = pRetPatch->InstructionBytes[i];
-                pRetPatch->Disabled = TRUE;
-                RemoveEntryList(pRetPatch);
-                if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
-                {
-                    MessageBox(NULL, "VirtualFree failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-                    return STATUS_UNSUCCESSFUL;
-                }
+            }
+
+            if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
+            {
+                MessageBox(NULL, "VirtualFree failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+                return STATUS_UNSUCCESSFUL;
             }
 
             // Restore old page rights
@@ -54,7 +82,6 @@ STATUS RtrUnhookAddress(QWORD Address)
             }
         }
 
-    _continue:
         list = list->Flink;
     }
 
@@ -79,7 +106,6 @@ STATUS RtrHookAddress(QWORD Address)
 
     // Loop over the instructions from entry point and replace RET instructions with INT3
     ZyanUPointer runtime_address = Address;
-    ZyanUSize offset = 0;
     ZydisDecodedInstruction instruction;
 
     if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(
@@ -179,17 +205,20 @@ STATUS RtrUnhookRegion(QWORD Address, DWORD Size)
             goto _continue;
         }
 
+        pRetPatch->Disabled = TRUE;
+        RemoveEntryList(list);
+        list = list->Blink;
+
         // Patch original instruction
         for (int i = 0; i < pRetPatch->Instruction.length; i++)
         {
             *((PBYTE)pRetPatch->Address + i) = pRetPatch->InstructionBytes[i];
-            pRetPatch->Disabled = TRUE;
-            RemoveEntryList(pRetPatch);
-            if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
-            {
-                MessageBox(NULL, "VirtualFree failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-                return STATUS_UNSUCCESSFUL;
-            }
+        }
+
+        if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
+        {
+            MessageBox(NULL, "VirtualFree failed", "RopTracerDll.dll", MB_ICONERROR);
+            return STATUS_UNSUCCESSFUL;
         }
 
     _continue:
@@ -258,6 +287,7 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
             ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
                 runtime_address);
             printf("%s\n", buffer);
+
             // Allocate and initialize a RET patch structure for the list
             PRET_PATCH retPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             if (NULL == retPatchEntry)
