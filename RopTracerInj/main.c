@@ -57,17 +57,11 @@ main(
     // 
     // return !bErr;
     
-    // HMODULE hMod = NULL;
-    LoadLibrary("C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\RopTracerDll.dll");
-    // if (!hMod)
-    // {
-    //     DWORD dw = GetLastError();
-    //     printf("[LOADER] The library could not load.  Error %d\n", dw);
-    // }
-    
+    LoadLibrary("RopTracerDll.dll");
+
     FILE* file;
     DWORD length;
-    PCHAR fpath = "C:\\Users\\aghiurea\\Desktop\\School\\Licenta\\RopTracer\\bin\\x64\\Debug\\rop-xor.txt";
+    PCHAR fpath = "rop-xor.txt";
     MyOpenFile(fpath, &file, &length);
 
     ReadFromFile(file, length);
