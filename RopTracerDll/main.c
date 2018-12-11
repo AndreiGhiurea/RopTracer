@@ -14,7 +14,6 @@ DllMain(
 
     CHAR    text[256] = { 0 };
     CHAR    number[20] = { 0 };
-    PIMAGE_SECTION_HEADER pTextSection = NULL;
     STATUS status = STATUS_SUCCESS;
   
     if (DLL_PROCESS_ATTACH == _Reason)
@@ -43,42 +42,37 @@ DllMain(
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
         }
         gExeFile.ImageBase = (QWORD)hCurrentModule;
-
-        // Parse the PE file in memory to find the entry point and .text section
-        PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)gExeFile.ImageBase;
-        PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)((PCHAR)pDosHeader + pDosHeader->e_lfanew);
-        PIMAGE_FILE_HEADER pFileHeader = (PIMAGE_FILE_HEADER)&pNtHeaders->FileHeader;
-
-        gExeFile.EntryPointRva = pNtHeaders->OptionalHeader.AddressOfEntryPoint;
-        gExeFile.EntryPoint = gExeFile.ImageBase + gExeFile.EntryPointRva;
-
-        PIMAGE_SECTION_HEADER pSectionHeader;
-        for (int i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++)
-        {
-            pSectionHeader = (PIMAGE_SECTION_HEADER)((PCHAR)pFileHeader + sizeof(IMAGE_FILE_HEADER) + pFileHeader->SizeOfOptionalHeader + sizeof(IMAGE_SECTION_HEADER) * i);
-            if (0 == strcmp(".text", (const char*)pSectionHeader->Name))
-            {
-                pTextSection = pSectionHeader;
-                break;
-            }
-        }
-
-        if (NULL == pTextSection)
-        {
-            MessageBox(NULL, "Couldn't find .text section. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-            return FALSE;
-        }
-
         printf("[INFO] ImageBase: 0x%016llx\n", gExeFile.ImageBase);
-        printf("[INFP] EntryPointRva: 0x%08lx\n", gExeFile.EntryPointRva);
-        printf("[INFO] EntryPoint: 0x%016llx\n", gExeFile.EntryPoint);
-        printf("[INFO] .textSection: 0x%016llx\n", gExeFile.ImageBase + pTextSection->VirtualAddress);
 
-        // Hook RET instructions from .text section
-        status = RtrHookRegion(gExeFile.ImageBase + pTextSection->VirtualAddress, pTextSection->Misc.VirtualSize);
+        HMODULE hNtdllModule = GetModuleHandle("ntdll.dll");
+        if (NULL == hCurrentModule)
+        {
+            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+        }
+
+        HMODULE hKrn32Module = GetModuleHandle("kernel32.dll");
+        if (NULL == hCurrentModule)
+        {
+            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+        }
+
+        // Hook RET instructions from all executable sections
+        status = RtrHookModule(gExeFile.ImageBase);
         if (!SUCCEEDED(status))
         {
-           MessageBox(NULL, "RtrHookRegion failed.", "RopTracerDll.dll", MB_ICONERROR);
+           MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
+        }
+
+        status = RtrHookModule((QWORD)hNtdllModule);
+        if (!SUCCEEDED(status))
+        {
+            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
+        }
+
+        status = RtrHookModule((QWORD)hKrn32Module);
+        if (!SUCCEEDED(status))
+        {
+            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
     }
     else if (DLL_PROCESS_DETACH == _Reason)

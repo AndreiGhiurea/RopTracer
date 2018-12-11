@@ -241,6 +241,66 @@ STATUS RtrUnhookRegion(QWORD Address, DWORD Size)
     return STATUS_SUCCESS;
 }
 
+STATUS RtrHookModule(QWORD ImageBase)
+{
+    STATUS status;
+
+    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)ImageBase;
+    PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)((PCHAR)pDosHeader + pDosHeader->e_lfanew);
+    PIMAGE_FILE_HEADER pFileHeader = (PIMAGE_FILE_HEADER)&pNtHeaders->FileHeader;
+
+    PIMAGE_SECTION_HEADER pSectionHeader;
+    for (int i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++)
+    {
+        pSectionHeader = (PIMAGE_SECTION_HEADER)((PCHAR)pFileHeader + sizeof(IMAGE_FILE_HEADER) + pFileHeader->SizeOfOptionalHeader + sizeof(IMAGE_SECTION_HEADER) * i);
+        if (pSectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE)
+        {
+            status = RtrHookRegion(ImageBase + pSectionHeader->VirtualAddress, pSectionHeader->Misc.VirtualSize);
+            if (!SUCCEEDED(status))
+            {
+                MessageBox(NULL, "RtrHookRegion failed", "RopTracerDll.dll", MB_ICONERROR);
+                return STATUS_UNSUCCESSFUL;
+            }
+        }
+        else
+        {
+            continue;
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
+
+STATUS RtrUnhookModule(QWORD ImageBase)
+{
+    STATUS status;
+
+    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)ImageBase;
+    PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)((PCHAR)pDosHeader + pDosHeader->e_lfanew);
+    PIMAGE_FILE_HEADER pFileHeader = (PIMAGE_FILE_HEADER)&pNtHeaders->FileHeader;
+
+    PIMAGE_SECTION_HEADER pSectionHeader;
+    for (int i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++)
+    {
+        pSectionHeader = (PIMAGE_SECTION_HEADER)((PCHAR)pFileHeader + sizeof(IMAGE_FILE_HEADER) + pFileHeader->SizeOfOptionalHeader + sizeof(IMAGE_SECTION_HEADER) * i);
+        if (pSectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE)
+        {
+            status = RtrUnhookRegion(ImageBase + pSectionHeader->VirtualAddress, pSectionHeader->Misc.VirtualSize);
+            if (!SUCCEEDED(status))
+            {
+                MessageBox(NULL, "RtrHookRegion failed", "RopTracerDll.dll", MB_ICONERROR);
+                return STATUS_UNSUCCESSFUL;
+            }
+            else
+            {
+                continue;;
+            }
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
+
 STATUS RtrHookRegion(QWORD Address, DWORD Size)
 {
     DWORD oldPageRights = 0, newOldPageRights = 0;
@@ -276,7 +336,7 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
         (PVOID)(Address + offset),
         length - offset,
         &instruction))
-        )
+        ) 
     {
         if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
         {
@@ -329,6 +389,10 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
         offset += instruction.length;
         runtime_address += instruction.length;
     }
+
+    printf("Addr: 0x%016llx\n", Address);
+    printf("runtime: 0x%016llx\n", runtime_address);
+    printf("size: 0x%08lx\n", Size);
 
     // Restore old page rights
     if (!VirtualProtect(

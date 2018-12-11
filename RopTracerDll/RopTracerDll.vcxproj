@@ -105,6 +105,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Zycore.lib;Zydis.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -142,6 +143,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AssemblerOutput>All</AssemblerOutput>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
