@@ -324,7 +324,7 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
     ZydisFormatter formatter;
     ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 
-    // Loop over the instructions from entry point and replace RET instructions with INT3
+    // Loop over the instructions replace RET instructions with INT3
     ZyanUPointer runtime_address = Address;
     ZyanUSize offset = 0;
     // Length to decode
