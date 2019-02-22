@@ -18,6 +18,13 @@ DllMain(
   
     if (DLL_PROCESS_ATTACH == _Reason)
     {
+        // Suspends all process threads
+        status = RtrSuspendThreads();
+        if (!SUCCEEDED(status))
+        {
+            printf("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
+        }
+        
         // Initialize gExeFile list head for RET patches
         InitializeListHead(&gExeFile.InstructionPatchList);
 
@@ -42,7 +49,7 @@ DllMain(
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
         }
         gExeFile.ImageBase = (QWORD)hCurrentModule;
-        printf("[INFO] ImageBase: 0x%016llx\n", gExeFile.ImageBase);
+        printf("[INFO] Main Program ImageBase: 0x%016llx\n", gExeFile.ImageBase);
 
         HMODULE hNtdllModule = GetModuleHandle("ntdll.dll");
         if (NULL == hCurrentModule)
@@ -73,6 +80,13 @@ DllMain(
         if (!SUCCEEDED(status))
         {
             MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
+        }
+
+        // Resume all threads
+        status = RtrResumeThreads();
+        if (!SUCCEEDED(status))
+        {
+            printf("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
         }
     }
     else if (DLL_PROCESS_DETACH == _Reason)

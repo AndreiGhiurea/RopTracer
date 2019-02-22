@@ -323,6 +323,7 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
     // Initialize formatter
     ZydisFormatter formatter;
     ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+    ZyanStatus zyanStatus;
 
     // Loop over the instructions replace RET instructions with INT3
     ZyanUPointer runtime_address = Address;
@@ -330,21 +331,37 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
     // Length to decode
     const ZyanUSize length = Size;
     ZydisDecodedInstruction instruction;
-
-    while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(
-        &decoder,
-        (PVOID)(Address + offset),
-        length - offset,
-        &instruction))
-        ) 
+    
+    while (offset < length)
     {
+        zyanStatus = ZydisDecoderDecodeBuffer(
+            &decoder,
+            (PVOID)(Address + offset),
+            length - offset,
+            &instruction);
+
+        if (0x00007ffed82359d4 == runtime_address || 0x00007ffed8235eda == runtime_address || 0x00007ffed827eda4 == runtime_address ||  0x00007ffed82aee04 == runtime_address)
+        {
+            offset += instruction.length;
+            runtime_address += instruction.length;
+            continue;
+        }
+
+        if (ZYDIS_MNEMONIC_INVALID == instruction.mnemonic)
+        {
+            offset += instruction.length;
+            runtime_address += instruction.length;
+            continue;
+        }
+
         if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
         {
             // Special case
-            if (instruction.length == 3 &&
-                *((PBYTE)runtime_address) == 0xC2 &&
-                *((PBYTE)runtime_address + 1) == 0x00 &&
-                *((PBYTE)runtime_address + 2) == 0x00
+            if (instruction.length != 1
+//                instruction.length == 3 &&
+//                *((PBYTE)runtime_address) == 0xC2 &&
+//                *((PBYTE)runtime_address + 1) == 0x00 &&
+//                *((PBYTE)runtime_address + 2) == 0x00
                 )
             {
                 offset += instruction.length;

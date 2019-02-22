@@ -9,6 +9,7 @@
 
 #include    "stdio.h"
 #include    <ntstatus.h>
+#include "tlhelp32.h"
 
 #ifndef     CHAR
 typedef char CHAR, *PCHAR;
@@ -67,6 +68,12 @@ extern EXE_FILE gExeFile;
 
 // InterlockedCompareExchange
 #define     ACQUIRE_MUTEX(mutex)                    while (0 != InterlockedCompareExchange64(&(mutex), 1, 0))
+
+STATUS
+RtrSuspendThreads(VOID);
+
+STATUS
+RtrResumeThreads(VOID);
 
 FORCEINLINE
 VOID
