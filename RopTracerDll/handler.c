@@ -17,8 +17,6 @@ RtrBreakpointHandler(
     switch (exceptioncode)
     {
     case EXCEPTION_BREAKPOINT:
-        // MessageBox(NULL, "Breakpoint Exception", "RopTracerDll.dll", MB_ICONINFORMATION);
-        
         list = gExeFile.InstructionPatchList.Flink;
         while (list != &gExeFile.InstructionPatchList && !found)
         {
@@ -26,6 +24,10 @@ RtrBreakpointHandler(
 
             if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pInstructionPatch->Address)
             {
+				printf("[INFO] Found the patch!\n");
+				printf("[INFO] Instruction Addr: 0x%016llx\n", pInstructionPatch->Address);
+				printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+
                 found = TRUE;
 
                 if (pInstructionPatch->Disabled)
@@ -36,13 +38,7 @@ RtrBreakpointHandler(
                 // Found the patch
                 // TODO: Some checks
                 printf("[INFO] Found the patch!\n");
-
-                /// Patch original instruction
-                // *(PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress = pInstructionPatch->InstructionBytes[0];
-                // for (int i = 0; i < pInstructionPatch->Instruction.length; i++)
-                // {
-                //     *((PBYTE)ExceptionInfo->ExceptionRecord->ExceptionAddress + i) = pInstructionPatch->InstructionBytes[i];
-                // }
+				printf("[INFO] Instruction Addr: 0x%016llx\n", pInstructionPatch->Address);
 
                 status = RtrEmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
                 if (!SUCCESS(status))
@@ -50,7 +46,6 @@ RtrBreakpointHandler(
                     printf("[ERROR] RtrEmulateInstruction failed!\n");
                 }
 
-                printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
                 returnValue = EXCEPTION_CONTINUE_EXECUTION;
             }
 
@@ -64,9 +59,6 @@ RtrBreakpointHandler(
         return EXCEPTION_CONTINUE_EXECUTION;
         break;
     default:
-        // printf("EXCEPTION ADDRESS: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
-        // printf("EXCEPTION CODE: 0x%08lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-        // MessageBox(NULL, "Unknown Exception", "RopTracerDll.dll", MB_ICONERROR);
         return EXCEPTION_CONTINUE_SEARCH;
         break;
     }

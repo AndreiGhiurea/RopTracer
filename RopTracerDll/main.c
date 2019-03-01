@@ -70,11 +70,11 @@ DllMain(
            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
 
-        status = RtrHookModule((QWORD)hNtdllModule);
-        if (!SUCCEEDED(status))
-        {
-            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
-        }
+		status = RtrHookModule((QWORD)hNtdllModule);
+		if (!SUCCEEDED(status))
+		{
+		    MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
+		}
 
         status = RtrHookModule((QWORD)hKrn32Module);
         if (!SUCCEEDED(status))

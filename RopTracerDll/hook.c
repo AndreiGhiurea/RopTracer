@@ -340,7 +340,7 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
             length - offset,
             &instruction);
 
-        if (0x00007ffed82359d4 == runtime_address || 0x00007ffed8235eda == runtime_address || 0x00007ffed827eda4 == runtime_address ||  0x00007ffed82aee04 == runtime_address)
+        if (0x00007ffd5925522d == runtime_address || 0x00007ffd59259aba == runtime_address)
         {
             offset += instruction.length;
             runtime_address += instruction.length;
@@ -391,16 +391,19 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
             instructionPatchEntry->Disabled = FALSE;
             instructionPatchEntry->Instruction = instruction;
 
-            // Patch RET with a INT3
-            instructionPatchEntry->InstructionBytes[0] = *(PBYTE)runtime_address;
-            *((PBYTE)runtime_address) = 0xCC; // INT3
-            for (int i = 1; i < instruction.length; i++)
-            {
-                instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
-                *((PBYTE)runtime_address + i) = 0x90; // NOP
-            }
+			for (int i = 0; i < instruction.length; i++)
+			{
+				instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
+			}
 
-            InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
+			InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
+
+            // Patch RET with a INT3
+            *((PBYTE)runtime_address) = 0xCC; // INT3
+			for (int i = 1; i < instruction.length; i++)
+			{
+				*((PBYTE)runtime_address + i) = 0x90; // NOP
+            }
         }
 
         offset += instruction.length;
