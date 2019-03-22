@@ -29,9 +29,17 @@ RtrBreakpointHandler(
                     goto _continue;
                 }
 
+#ifdef _WIN64
                 printf("[TRACER] 0x%016llx - returns to -> 0x%016llx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp);
+#else
+                printf("[TRACER] 0x%08lx - returns to -> 0x%08lx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Esp);
+#endif
 
+#ifdef _WIN64
                 SIZE_T originalRspValue = *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp;
+#else
+                SIZE_T originalRspValue = *(PSIZE_T)ExceptionInfo->ContextRecord->Esp;
+#endif // _WIN64
                 SIZE_T rspValue = originalRspValue;
                 rspValue -= 0x64;
 
@@ -72,7 +80,11 @@ RtrBreakpointHandler(
                     if (runtime_address + instruction.length == originalRspValue)
                     {
                         // Print current instruction pointer.
+#ifdef _WIN64
                         printf("[DISASM] 0x%016llx   ", runtime_address);
+#else
+                        printf("[DISASM] 0x%08lx   ", runtime_address);
+#endif
 
                         // Format & print the binary instruction structure to human readable format
                         char mnemonicBuffer[256];

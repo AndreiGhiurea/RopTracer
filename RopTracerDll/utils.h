@@ -20,7 +20,11 @@ typedef unsigned __int8 BOOLEAN, *PBOOLEAN;
 #endif
 
 #ifndef     QWORD
+#ifdef _WIN64
 typedef unsigned __int64 QWORD, *PQWORD;
+#else
+typedef unsigned __int32 QWORD, *PQWORD;
+#endif
 #endif
 
 typedef struct _RET_PATCH {

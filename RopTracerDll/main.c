@@ -31,17 +31,6 @@ DllMain(
         // Register critical exception handler
         AddVectoredExceptionHandler(1, RtrBreakpointHandler);
 
-        _itoa_s(GetCurrentProcessId(), number, 20, 10);
-
-        strcat_s(text, 256, "RopTracerDll.dll has been successfully injected in target with pid: ");
-        strcat_s(text, 256, number);
-        _itoa_s(GetCurrentProcessId(), number, 20, 16);
-        strcat_s(text, 256, " (0x");
-        strcat_s(text, 256, number);
-        strcat_s(text, 256, ")");
-
-        // MessageBox(NULL, text, "RopTracerDll.dll", MB_ICONINFORMATION);
-
         // Get current .exe image base address
         HMODULE hCurrentModule = GetModuleHandle(NULL);
         if (NULL == hCurrentModule)
@@ -49,19 +38,6 @@ DllMain(
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
         }
         gExeFile.ImageBase = (QWORD)hCurrentModule;
-        printf("[INFO] Main Program ImageBase: 0x%016llx\n", gExeFile.ImageBase);
-
-        /*HMODULE hNtdllModule = GetModuleHandle("ntdll.dll");
-        if (NULL == hCurrentModule)
-        {
-            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-        }
-
-        HMODULE hKrn32Module = GetModuleHandle("kernel32.dll");
-        if (NULL == hCurrentModule)
-        {
-            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-        }*/
 
         // Hook RET instructions from all executable sections
         status = RtrHookModule(gExeFile.ImageBase);
@@ -70,17 +46,17 @@ DllMain(
            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
 
-		/*status = RtrHookModule((QWORD)hNtdllModule);
-		if (!SUCCEEDED(status))
-		{
-		    MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
-		}
+        _itoa_s(GetCurrentProcessId(), number, 20, 10);
 
-        status = RtrHookModule((QWORD)hKrn32Module);
-        if (!SUCCEEDED(status))
-        {
-            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
-        }*/
+        strcat_s(text, 256, "RopTracerDll.dll has been successfully injected in target with pid: ");
+        strcat_s(text, 256, number);
+        _itoa_s(GetCurrentProcessId(), number, 20, 16);
+        strcat_s(text, 256, " (0x");
+        strcat_s(text, 256, number);
+        strcat_s(text, 256, ")");
+        strcat_s(text, 256, ". Application protected against ROP Chain exploits!");
+
+        MessageBox(NULL, text, "RopTracerDll.dll", MB_ICONINFORMATION);
 
         // Resume all threads
         status = RtrResumeThreads();

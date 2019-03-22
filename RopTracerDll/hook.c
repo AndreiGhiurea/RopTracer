@@ -176,7 +176,6 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
     SIZE_T length;
 
     // Loop over the instructions replace RET instructions with INT3
-     // Loop over the instructions replace RET instructions with INT3
     runtime_address = Address;
     offset = 0;
     // Length to decode
@@ -226,18 +225,18 @@ STATUS RtrHookRegion(QWORD Address, DWORD Size)
             instructionPatchEntry->Disabled = FALSE;
             instructionPatchEntry->Instruction = instruction;
 
-			for (int i = 0; i < instruction.length; i++)
-			{
-				instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
-			}
+            for (int i = 0; i < instruction.length; i++)
+            {
+                instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
+            }
 
-			InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
+            InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
 
             // Patch RET with a INT3
             *((PBYTE)runtime_address) = 0xCC; // INT3
-			for (int i = 1; i < instruction.length; i++)
-			{
-				*((PBYTE)runtime_address + i) = 0x90; // NOP
+            for (int i = 1; i < instruction.length; i++)
+            {
+                *((PBYTE)runtime_address + i) = 0x90; // NOP
             }
         }
 
