@@ -1,128 +1,62 @@
 #include "injector.h"
-#pragma check_stack(off)
 
-#define FIRST_GADGET_FILE_OFFSET         (-16) * 8
-#define FIRST_GADGET_OFFSET              0x8F0F1
+#define DLL_NAME	"RopTracerDll.dll"
+#define EXE_NAME	"RopTracerVuln.exe"
 
-#define SECOND_GADGET_FILE_OFFSET        (-11) * 8
-#define SECOND_GADGET_OFFSET             0x2566D
-
-#define THIRD_GADGET_FILE_OFFSET         (-9) * 8
-#define THIRD_GADGET_OFFSET              0x8F0F6
-
-#define VIRTUAL_PROTECT_FILE_OFFSET      (-6)  * 8
-
-VOID
-FixFile(PCHAR FilePath, FILE** File, DWORD* Length)
+int main(void)
 {
-    UNREFERENCED_PARAMETER(Length);
+    BOOL bErr;
 
-    QWORD gadgetAddr = 0;
+    // Get the list of process identifiers.
+    DWORD aProcesses[1024], cbNeeded, cProcesses;
+    unsigned int i;
 
-    QWORD ntdllAddr = (QWORD)GetModuleHandle("ntdll.dll");
-    
-    HMODULE kernel32Handle = GetModuleHandle("kernel32.dll");
-    QWORD vpAddr = (QWORD)GetProcAddress(kernel32Handle, "VirtualProtect");
-
-    if (fopen_s(File, FilePath, "rb+"))
+    if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded))
     {
-        printf("[ERROR] fopen_s failed %d!\n", GetLastError());
-        return;
+        return 1;
     }
 
-    gadgetAddr = ntdllAddr + FIRST_GADGET_OFFSET;
-    fseek(*File, FIRST_GADGET_FILE_OFFSET, SEEK_END);
-    fwrite(&gadgetAddr, sizeof(QWORD), 1, *File);
+    // Calculate how many process identifiers were returned.
+    cProcesses = cbNeeded / sizeof(DWORD);
 
-    gadgetAddr = ntdllAddr + SECOND_GADGET_OFFSET;
-    fseek(*File, SECOND_GADGET_FILE_OFFSET, SEEK_END);
-    fwrite(&gadgetAddr, sizeof(QWORD), 1, *File);
-
-    gadgetAddr = ntdllAddr + THIRD_GADGET_OFFSET;
-    fseek(*File, THIRD_GADGET_FILE_OFFSET, SEEK_END);
-    fwrite(&gadgetAddr, sizeof(QWORD), 1, *File);
-
-    fseek(*File, VIRTUAL_PROTECT_FILE_OFFSET, SEEK_END);
-    fwrite(&vpAddr, sizeof(QWORD), 1, *File);
-
-    fclose(*File);
-
-    return;
-}
-
-VOID
-MyOpenFile(PCHAR FilePath, FILE** File, DWORD* Length)
-{
-    if (fopen_s(File, FilePath, "rb"))
+    // Print the name and process identifier for each process.
+    for (i = 0; i < cProcesses; i++)
     {
-        printf("[ERROR] fopen_s failed!\n");
-        return;
+        if (aProcesses[i] != 0)
+        {
+            CHAR szProcessName[MAX_PATH] = "<unknown>";
+
+            // Get a handle to the process.
+            HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION || PROCESS_VM_READ ,
+                FALSE, aProcesses[i]);
+
+            // Get the process name.
+            if (NULL != hProcess)
+            {
+                HMODULE hMod;
+
+                if (EnumProcessModules(hProcess, &hMod, sizeof(hMod),
+                    &cbNeeded))
+                {
+                    GetModuleBaseName(hProcess, hMod, szProcessName,
+                        sizeof(szProcessName) / sizeof(CHAR));
+                }
+            }
+
+            // Print the process name and identifier.
+            if (strcmp(EXE_NAME, szProcessName) == 0)
+            {
+                printf("Found %s - (PID: %u)\n", szProcessName, aProcesses[i]);
+                printf("Trying to inject hack!\n");
+
+                bErr = InjectDllIntoProcess(hProcess, DLL_NAME);
+                printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
+            }
+
+            // Release the handle to the process.
+            CloseHandle(hProcess);
+        }
     }
 
-    fseek(*File, 0, SEEK_END);
-    *Length = ftell(*File);
-    rewind(*File);
-
-    return;
-}
-
-VOID
-ReadFromFile(FILE* File, DWORD Length)
-{
-    CHAR smallBuffer[8192] = { 0 };
-
-    printf("Reading %d characters\n", Length);
-    fread_s(smallBuffer, Length-1, 1, Length-1, File);
-
-    return;
-}
-
-INT
-main(
-    INT Argc,
-    PCHAR Argv[]
-)
-{
-    UNREFERENCED_PARAMETER(Argv);
-    UNREFERENCED_PARAMETER(Argc);
-
-    // DWORD pid = 0;
-    // PCHAR pDllPath = NULL;
-    // BOOL bErr;
-    // 
-    // if (Argc != 3)
-    // {
-    //     printf("Usage %s <pid> <dll path>\n", Argv[0]);
-    //     return -1;
-    // }
-    // 
-    // pid = strtoul(Argv[1], NULL, 0);
-    // pDllPath = Argv[2];
-    // 
-    // printf("Injecting `%s` into %d...\n", pDllPath, pid);
-    // 
-    // bErr = InjectDllIntoProcess(pid, pDllPath);
-    // printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
-    // 
-    // return !bErr;
-    
-    LoadLibrary("RopTracerDll.dll");
-
-    FILE* file;
-    DWORD length;
-    PCHAR fpath = "rop-xor.txt";
-    FixFile(fpath, &file, &length);
-
-    MyOpenFile(fpath, &file, &length);
-    ReadFromFile(file, length);
-
-    fclose(file);
-
-    // if (hMod)
-    // {
-    //     printf("[LOADER] Library loaded successfully\n");
-    //     FreeLibrary(hMod);
-    // }
-    
     return 0;
 }

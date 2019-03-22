@@ -10,6 +10,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RopTracerInj", "RopTracerIn
 		{2F4806E3-AB27-4333-A3E0-AF9B1F7CFDB7} = {2F4806E3-AB27-4333-A3E0-AF9B1F7CFDB7}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RopTracerVuln", "RopTracerVuln\RopTracerVuln.vcxproj", "{D5A8C803-57A2-41EC-B052-61285B3C3D20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -34,6 +36,14 @@ Global
 		{99C818C5-DE43-4211-9A55-8527B3AB8363}.Release|x64.Build.0 = Release|x64
 		{99C818C5-DE43-4211-9A55-8527B3AB8363}.Release|x86.ActiveCfg = Release|Win32
 		{99C818C5-DE43-4211-9A55-8527B3AB8363}.Release|x86.Build.0 = Release|Win32
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Debug|x64.ActiveCfg = Debug|x64
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Debug|x64.Build.0 = Debug|x64
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Debug|x86.ActiveCfg = Debug|Win32
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Debug|x86.Build.0 = Debug|Win32
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Release|x64.ActiveCfg = Release|x64
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Release|x64.Build.0 = Release|x64
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Release|x86.ActiveCfg = Release|Win32
+		{D5A8C803-57A2-41EC-B052-61285B3C3D20}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

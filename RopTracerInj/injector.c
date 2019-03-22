@@ -4,21 +4,16 @@
 
 BOOLEAN
 InjectDllIntoProcess(
-    _In_ const DWORD Pid,
+    _In_ const HANDLE Process,
     _In_ const PCHAR DllPath
 )
 {
-    HANDLE hProcess = NULL;
     CHAR fName[MAX_PATH] = { 0 };
     PVOID pProcessMem = NULL;
     HANDLE hThread = NULL;
     HMODULE hKernel32 = NULL;
     LPTHREAD_START_ROUTINE pLoadLib;
     DWORD threadId;
-    HMODULE hMods[4096];
-    DWORD cbNeeded;
-    PBYTE rvaLoadLibraryA;
-    unsigned int i;
     BOOLEAN success = TRUE;
 
     if (strlen(DllPath) >= sizeof(fName))
@@ -28,19 +23,15 @@ InjectDllIntoProcess(
         goto cleanup_and_exit;
     }
 
-    // Open the process
-    hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Pid);
-    if (NULL == hProcess)
+    if (!GetFullPathName(DllPath, MAX_PATH, fName, NULL))
     {
-        printf("OpenProcess failed: %d\n", GetLastError());
-        success = FALSE;
-        goto cleanup_and_exit;
+        printf("GetFullPathName failed: %d\n", GetLastError());
     }
 
-    memcpy(fName, DllPath, strlen(DllPath));
+    printf("Full DLL path: %s\n", fName);
 
     // Reserve memory for dll's path in the process' memory
-    pProcessMem = VirtualAllocEx(hProcess, NULL, sizeof(fName), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    pProcessMem = VirtualAllocEx(Process, NULL, strlen(fName) + 1, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     if (NULL == pProcessMem)
     {
         printf("VirtualAllocEx failed: %d\n", GetLastError());
@@ -49,14 +40,14 @@ InjectDllIntoProcess(
     }
 
     // Write in process' memory dll's path
-    if (!WriteProcessMemory(hProcess, pProcessMem, fName, sizeof(fName), NULL))
+    if (!WriteProcessMemory(Process, pProcessMem, fName, strlen(fName) + 1, NULL))
     {
         printf("WriteProcessMemory failed: %d\n", GetLastError());
         success = FALSE;
         goto cleanup_and_exit;
     }
 
-    //          Calculate RVA to LoadLibraryA
+    // Calculate RVA to LoadLibraryA
     // Get handle to kernel32
     hKernel32 = GetModuleHandle(KERNEL32_NAME);
     if (NULL == hKernel32)
@@ -79,46 +70,8 @@ InjectDllIntoProcess(
 
     printf("LoadLibraryA found @ %p\n\n", pLoadLib);
 
-    rvaLoadLibraryA = (PBYTE)((SIZE_T)pLoadLib - (SIZE_T)hKernel32);
-    printf("RVA is %p\n", rvaLoadLibraryA);
-
-    // We search for the "real" Kernel32.dll of our process(this special case is for the ASM app)
-    if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
-    {
-        for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
-        {
-            TCHAR szModName[MAX_PATH];
-
-            // Get the full path to the module's file
-            if (GetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
-            {
-                // Print the module name and handle value.
-                printf(TEXT("\t%s 0x%p\n"), szModName, hMods[i]);
-
-                // Get the "real" handle to kernel32
-                if (0 == _stricmp(szModName, KERNEL32_PATH))
-                {
-                    pLoadLib = (LPTHREAD_START_ROUTINE)((SIZE_T)hMods[i] + (SIZE_T)rvaLoadLibraryA);
-
-                    printf("Kernel32 ASM found @ %p\n", hMods[i]);
-                    printf("LoadLibraryA ASM found @ %p\n", pLoadLib);
-
-                    break;
-                }
-            }
-        }
-    }
-
-    // check if hMods array is too small to hold all module handles
-    if (sizeof(hMods) < cbNeeded)
-    {
-        printf("[ERROR] hMods array is too small to hold all module handles for the process\n");
-        success = FALSE;
-        goto cleanup_and_exit;
-    }
-
     // Create a remote thread starting at LoadLibrary
-    hThread = CreateRemoteThread(hProcess, NULL, 0, pLoadLib, pProcessMem, 0, &threadId);
+    hThread = CreateRemoteThread(Process, NULL, 0, pLoadLib, pProcessMem, 0, &threadId);
     if (NULL == hThread)
     {
         printf("CreateRemoteThread failed: %d\n", GetLastError());
@@ -128,14 +81,18 @@ InjectDllIntoProcess(
 
     printf("Remote thread id: %d\n", threadId);
 
+    DWORD lphInjected;
+    // Locate address our payload was loaded
+    if (hThread != 0) {
+        WaitForSingleObject(hThread, INFINITE);
+        GetExitCodeThread(hThread, (LPDWORD)&lphInjected);
+    }
+
+    printf("Thread exit code: %d\n", lphInjected);
+
     success = TRUE;
 
 cleanup_and_exit:
-    if (NULL != hProcess)
-    {
-        CloseHandle(hProcess);
-    }
-
     if (NULL != hThread)
     {
         CloseHandle(hThread);
@@ -143,7 +100,7 @@ cleanup_and_exit:
 
     if (NULL != pProcessMem)
     {
-        VirtualFreeEx(hProcess, pProcessMem, 0, MEM_FREE);
+        VirtualFreeEx(Process, pProcessMem, 0, MEM_FREE);
     }
 
     return success;

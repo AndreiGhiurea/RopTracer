@@ -4,7 +4,7 @@
 #define WIN32_NO_STATUS
 #include <windows.h>
 #undef WIN32_NO_STATUS
-
+#include <psapi.h>
 #include <ntstatus.h>
 #include <stdio.h>
 
