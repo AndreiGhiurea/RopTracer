@@ -10,7 +10,7 @@ RtrBreakpointHandler(
     DWORD exceptioncode;
     PLIST_ENTRY list;
     BOOL found = FALSE;
-    STATUS status = STATUS_SUCCESS;
+    // STATUS status = STATUS_SUCCESS;
 
     exceptioncode = ExceptionInfo->ExceptionRecord->ExceptionCode;
 
@@ -24,21 +24,73 @@ RtrBreakpointHandler(
 
             if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pInstructionPatch->Address)
             {
-				printf("[INFO] Found the patch!\n");
-				printf("[INFO] Instruction Addr: 0x%016llx\n", pInstructionPatch->Address);
-				printf("[INFO] Exception address     : 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
-
-                found = TRUE;
-
                 if (pInstructionPatch->Disabled)
                 {
                     goto _continue;
                 }
 
-                // Found the patch
-                // TODO: Some checks
-                printf("[INFO] Found the patch!\n");
-				printf("[INFO] Instruction Addr: 0x%016llx\n", pInstructionPatch->Address);
+                printf("[TRACER] 0x%016llx - returns to -> 0x%016llx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp);
+
+                SIZE_T originalRspValue = *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp;
+                SIZE_T rspValue = originalRspValue;
+                rspValue -= 0x64;
+
+                PBYTE codeBuffer = (PBYTE)rspValue;
+                
+
+                // Initialize decoder context
+                ZydisDecoder decoder;
+                ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+
+                // Initialize formatter
+                ZydisFormatter formatter;
+                ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+                DWORD status;
+
+                SIZE_T runtime_address;
+                SIZE_T offset;
+
+                SIZE_T codeBytesRead = 0x64;
+                SIZE_T length;
+
+                // Loop over the instructions replace RET instructions with INT3
+                runtime_address = rspValue;
+                offset = 0;
+                // Length to decode
+                length = codeBytesRead;
+                ZydisDecodedInstruction instruction;
+
+                while (offset < length)
+                {
+                    status = ZydisDecoderDecodeBuffer(
+                        &decoder,
+                        (PVOID)(codeBuffer + offset),
+                        length - offset,
+                        0,
+                        &instruction);
+
+                    if (runtime_address + instruction.length == originalRspValue)
+                    {
+                        // Print current instruction pointer.
+                        printf("[DISASM] 0x%016llx   ", runtime_address);
+
+                        // Format & print the binary instruction structure to human readable format
+                        char mnemonicBuffer[256];
+                        ZydisFormatterFormatInstruction(&formatter, &instruction, mnemonicBuffer, sizeof(mnemonicBuffer));
+                        printf("%s\n\n", mnemonicBuffer);
+
+                        if (instruction.mnemonic != ZYDIS_MNEMONIC_CALL)
+                        {
+                            printf("[TRACER] ROP Chain Detected. Aborting application.\n");
+                            MessageBox(NULL, "ROP Chain Detected. Aborting execution!", "RopTracer", MB_ICONERROR);
+                            ExitProcess((UINT)1);
+                            goto cleanup_and_exit;
+                        }
+                    }
+
+                    runtime_address += instruction.length;
+                    offset += instruction.length;
+                }
 
                 status = RtrEmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
                 if (!SUCCESS(status))
@@ -52,6 +104,8 @@ RtrBreakpointHandler(
         _continue:
             list = list->Flink;
         }
+
+cleanup_and_exit:
 
         break;
     case EXCEPTION_SINGLE_STEP:

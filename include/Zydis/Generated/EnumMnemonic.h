@@ -1,7 +1,12 @@
 /**
- * @brief   Defines the `ZydisMnemonic` enum.
+ * @brief   Defines the `ZydisMnemonic` datatype.
  */
-typedef enum ZydisMnemonic_
+typedef ZydisU16 ZydisMnemonic;
+
+/**
+ * @brief   Values that represent `ZydisMnemonic` elements.
+ */
+enum ZydisMnemonics
 {
     ZYDIS_MNEMONIC_INVALID,
     ZYDIS_MNEMONIC_AAA,
@@ -69,7 +74,6 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_CLAC,
     ZYDIS_MNEMONIC_CLC,
     ZYDIS_MNEMONIC_CLD,
-    ZYDIS_MNEMONIC_CLDEMOTE,
     ZYDIS_MNEMONIC_CLEVICT0,
     ZYDIS_MNEMONIC_CLEVICT1,
     ZYDIS_MNEMONIC_CLFLUSH,
@@ -416,15 +420,12 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_MINSS,
     ZYDIS_MNEMONIC_MONITOR,
     ZYDIS_MNEMONIC_MONITORX,
-    ZYDIS_MNEMONIC_MONTMUL,
     ZYDIS_MNEMONIC_MOV,
     ZYDIS_MNEMONIC_MOVAPD,
     ZYDIS_MNEMONIC_MOVAPS,
     ZYDIS_MNEMONIC_MOVBE,
     ZYDIS_MNEMONIC_MOVD,
     ZYDIS_MNEMONIC_MOVDDUP,
-    ZYDIS_MNEMONIC_MOVDIR64B,
-    ZYDIS_MNEMONIC_MOVDIRI,
     ZYDIS_MNEMONIC_MOVDQ2Q,
     ZYDIS_MNEMONIC_MOVDQA,
     ZYDIS_MNEMONIC_MOVDQU,
@@ -753,7 +754,6 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_SYSRET,
     ZYDIS_MNEMONIC_T1MSKC,
     ZYDIS_MNEMONIC_TEST,
-    ZYDIS_MNEMONIC_TPAUSE,
     ZYDIS_MNEMONIC_TZCNT,
     ZYDIS_MNEMONIC_TZCNTI,
     ZYDIS_MNEMONIC_TZMSK,
@@ -762,8 +762,6 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_UD0,
     ZYDIS_MNEMONIC_UD1,
     ZYDIS_MNEMONIC_UD2,
-    ZYDIS_MNEMONIC_UMONITOR,
-    ZYDIS_MNEMONIC_UMWAIT,
     ZYDIS_MNEMONIC_UNPCKHPD,
     ZYDIS_MNEMONIC_UNPCKHPS,
     ZYDIS_MNEMONIC_UNPCKLPD,
@@ -1573,11 +1571,6 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_XADD,
     ZYDIS_MNEMONIC_XBEGIN,
     ZYDIS_MNEMONIC_XCHG,
-    ZYDIS_MNEMONIC_XCRYPT_CBC,
-    ZYDIS_MNEMONIC_XCRYPT_CFB,
-    ZYDIS_MNEMONIC_XCRYPT_CTR,
-    ZYDIS_MNEMONIC_XCRYPT_ECB,
-    ZYDIS_MNEMONIC_XCRYPT_OFB,
     ZYDIS_MNEMONIC_XEND,
     ZYDIS_MNEMONIC_XGETBV,
     ZYDIS_MNEMONIC_XLAT,
@@ -1597,9 +1590,6 @@ typedef enum ZydisMnemonic_
     ZYDIS_MNEMONIC_XSAVES,
     ZYDIS_MNEMONIC_XSAVES64,
     ZYDIS_MNEMONIC_XSETBV,
-    ZYDIS_MNEMONIC_XSHA1,
-    ZYDIS_MNEMONIC_XSHA256,
-    ZYDIS_MNEMONIC_XSTORE,
     ZYDIS_MNEMONIC_XTEST,
 
     /**
@@ -1607,7 +1597,7 @@ typedef enum ZydisMnemonic_
      */
     ZYDIS_MNEMONIC_MAX_VALUE = ZYDIS_MNEMONIC_XTEST,
     /**
-     * @brief   The minimum number of bits required to represent all values of this enum.
+     * @brief   Minimum amount of bits required to store a value of this enum.
      */
-    ZYDIS_MNEMONIC_REQUIRED_BITS = ZYAN_BITS_TO_REPRESENT(ZYDIS_MNEMONIC_MAX_VALUE)
-} ZydisMnemonic;
+    ZYDIS_MNEMONIC_MIN_BITS  = 0x000B
+};

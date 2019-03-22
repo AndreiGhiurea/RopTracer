@@ -32,123 +32,154 @@
 #ifndef ZYDIS_STATUS_H
 #define ZYDIS_STATUS_H
 
-#include <Zycore/Status.h>
+#include <Zydis/CommonTypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* ============================================================================================== */
-/* Status codes                                                                                   */
+/* Enums and types                                                                                */
 /* ============================================================================================== */
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Module IDs                                                                                     */
-/* ---------------------------------------------------------------------------------------------- */
-
 /**
- * @brief   The zydis module id.
+ * @brief   Defines the @c ZydisStatus datatype.
  */
-#define ZYAN_MODULE_ZYDIS   0x002
-
-/* ---------------------------------------------------------------------------------------------- */
-/* Status codes                                                                                   */
-/* ---------------------------------------------------------------------------------------------- */
-
-/* ---------------------------------------------------------------------------------------------- */
-/* Decoder                                                                                        */
-/* ---------------------------------------------------------------------------------------------- */
+typedef ZydisU32 ZydisStatus;
 
 /**
- * @brief   An attempt was made to read data from an input data-source that has no more data
- *          available.
+ * @brief   Values that represent a zydis status-codes.
  */
-#define ZYDIS_STATUS_NO_MORE_DATA \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x00)
+enum ZydisStatusCodes
+{
+    /* ------------------------------------------------------------------------------------------ */
+    /* General                                                                                    */
+    /* ------------------------------------------------------------------------------------------ */
+
+    /**
+     * @brief   The operation completed successfully.
+     */
+    ZYDIS_STATUS_SUCCESS                                                              = 0x00000000,
+    /**
+     * @brief   An invalid parameter was passed to a function.
+     */
+    ZYDIS_STATUS_INVALID_PARAMETER,
+    /**
+     * @brief   An attempt was made to perform an invalid operation.
+     */
+    ZYDIS_STATUS_INVALID_OPERATION,
+    /**
+     * @brief   A buffer passed to a function was too small to complete the requested operation.
+     */
+    ZYDIS_STATUS_INSUFFICIENT_BUFFER_SIZE,
+
+    /* ------------------------------------------------------------------------------------------ */
+    /* Decoder                                                                                    */
+    /* ------------------------------------------------------------------------------------------ */
+
+    /**
+     * @brief   An attempt was made to read data from an input data-source that has no more data
+     *          available.
+     */
+    ZYDIS_STATUS_NO_MORE_DATA,
+    /**
+     * @brief   An general error occured while decoding the current instruction. The instruction
+     *          might be undefined.
+     */
+    ZYDIS_STATUS_DECODING_ERROR,
+    /**
+     * @brief   The instruction exceeded the maximum length of 15 bytes.
+     */
+    ZYDIS_STATUS_INSTRUCTION_TOO_LONG,
+    /**
+     * @brief   The instruction encoded an invalid register.
+     */
+    ZYDIS_STATUS_BAD_REGISTER,
+    /**
+     * @brief   A lock-prefix (F0) was found while decoding an instruction that does not support
+     *          locking.
+     */
+    ZYDIS_STATUS_ILLEGAL_LOCK,
+    /**
+     * @brief   A legacy-prefix (F2, F3, 66) was found while decoding a XOP/VEX/EVEX/MVEX
+     *          instruction.
+     */
+    ZYDIS_STATUS_ILLEGAL_LEGACY_PFX,
+    /**
+     * @brief   A rex-prefix was found while decoding a XOP/VEX/EVEX/MVEX instruction.
+     */
+    ZYDIS_STATUS_ILLEGAL_REX,
+    /**
+     * @brief   An invalid opcode-map value was found while decoding a XOP/VEX/EVEX/MVEX-prefix.
+     */
+    ZYDIS_STATUS_INVALID_MAP,
+    /**
+     * @brief   An error occured while decoding the EVEX-prefix.
+     */
+    ZYDIS_STATUS_MALFORMED_EVEX,
+    /**
+     * @brief   An error occured while decoding the MVEX-prefix.
+     */
+    ZYDIS_STATUS_MALFORMED_MVEX, // TODO: Do we need this?
+    /**
+     * @brief   An invalid write-mask was specified for an EVEX/MVEX instruction.
+     */
+    ZYDIS_STATUS_INVALID_MASK,
+
+    /* ------------------------------------------------------------------------------------------ */
+    /* Formatter                                                                                  */
+    /* ------------------------------------------------------------------------------------------ */
+
+    /**
+     * @brief   Returning this status code in operand-related custom formatter callbacks will cause
+     *          the formatter to omit the operand.
+     */
+    ZYDIS_STATUS_SKIP_OPERAND,
+
+    /* ------------------------------------------------------------------------------------------ */
+    /* Encoder                                                                                    */
+    /* ------------------------------------------------------------------------------------------ */
+
+    ZYDIS_STATUS_IMPOSSIBLE_INSTRUCTION,
+
+    /* ------------------------------------------------------------------------------------------ */
+    /* Misc                                                                                       */
+    /* ------------------------------------------------------------------------------------------ */
+
+    /**
+     * @brief   The base value for user-defined status codes.
+     */
+    ZYDIS_STATUS_USER                                                                 = 0x10000000
+
+    // Max value entry intentionally omitted since users might define custom error codes for
+    // formatter hooks.
+};
+
+/* ============================================================================================== */
+/* Macros                                                                                         */
+/* ============================================================================================== */
 
 /**
- * @brief   An general error occured while decoding the current instruction. The instruction
- *          might be undefined.
- */
-#define ZYDIS_STATUS_DECODING_ERROR \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x01)
-
-/**
- * @brief   The instruction exceeded the maximum length of 15 bytes.
- */
-#define ZYDIS_STATUS_INSTRUCTION_TOO_LONG \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x02)
-
-/**
- * @brief   The instruction encoded an invalid register.
- */
-#define ZYDIS_STATUS_BAD_REGISTER \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x03)
-
-/**
- * @brief   A lock-prefix (F0) was found while decoding an instruction that does not support
- *          locking.
- */
-#define ZYDIS_STATUS_ILLEGAL_LOCK \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x04)
-
-/**
- * @brief   A legacy-prefix (F2, F3, 66) was found while decoding a XOP/VEX/EVEX/MVEX
- *          instruction.
- */
-#define ZYDIS_STATUS_ILLEGAL_LEGACY_PFX \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x05)
-
-/**
- * @brief   A rex-prefix was found while decoding a XOP/VEX/EVEX/MVEX instruction.
- */
-#define ZYDIS_STATUS_ILLEGAL_REX \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x06)
-
-/**
- * @brief   An invalid opcode-map value was found while decoding a XOP/VEX/EVEX/MVEX-prefix.
- */
-#define ZYDIS_STATUS_INVALID_MAP \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x07)
-
-/**
- * @brief   An error occured while decoding the EVEX-prefix.
- */
-#define ZYDIS_STATUS_MALFORMED_EVEX \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x08)
-
-/**
- * @brief   An error occured while decoding the MVEX-prefix.
- */
-#define ZYDIS_STATUS_MALFORMED_MVEX \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x09)
-
-/**
- * @brief   An invalid write-mask was specified for an EVEX/MVEX instruction.
- */
-#define ZYDIS_STATUS_INVALID_MASK \
-    ZYAN_MAKE_STATUS(1, ZYAN_MODULE_ZYDIS, 0x0A)
-
-/* ---------------------------------------------------------------------------------------------- */
-/* Formatter                                                                                      */
-/* ---------------------------------------------------------------------------------------------- */
-
-/**
- * @brief   Returning this status code in some specified formatter callbacks will cause the
- *          formatter to omit the corresponding token.
+ * @brief   Checks if a zydis operation was successfull.
  *
- * Valid callbacks:
- * - `ZYDIS_FORMATTER_FUNC_PRE_OPERAND`
- * - `ZYDIS_FORMATTER_FUNC_POST_OPERAND`
- * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_REG`
- * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_MEM`
- * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_PTR`
- * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_IMM`
+ * @param   status  The zydis status-code to check.
  */
-#define ZYDIS_STATUS_SKIP_TOKEN \
-    ZYAN_MAKE_STATUS(0, ZYAN_MODULE_ZYDIS, 0x0B)
+#define ZYDIS_SUCCESS(status) (status == ZYDIS_STATUS_SUCCESS)
 
-/* ---------------------------------------------------------------------------------------------- */
+/**
+ * @brief   Checks if a zydis operation was successfull and returns the status-code, if not.
+ *
+ * @param   status  The zydis status-code to check.
+ */
+#define ZYDIS_CHECK(status) \
+    do \
+    { \
+        ZydisStatus status_038560234 = status; \
+        if (!ZYDIS_SUCCESS(status_038560234)) \
+        { \
+            return status_038560234; \
+        } \
+    } while (0)
 
 /* ============================================================================================== */
 

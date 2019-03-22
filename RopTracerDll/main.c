@@ -51,7 +51,7 @@ DllMain(
         gExeFile.ImageBase = (QWORD)hCurrentModule;
         printf("[INFO] Main Program ImageBase: 0x%016llx\n", gExeFile.ImageBase);
 
-        HMODULE hNtdllModule = GetModuleHandle("ntdll.dll");
+        /*HMODULE hNtdllModule = GetModuleHandle("ntdll.dll");
         if (NULL == hCurrentModule)
         {
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
@@ -61,7 +61,7 @@ DllMain(
         if (NULL == hCurrentModule)
         {
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
-        }
+        }*/
 
         // Hook RET instructions from all executable sections
         status = RtrHookModule(gExeFile.ImageBase);
@@ -70,7 +70,7 @@ DllMain(
            MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
         }
 
-		status = RtrHookModule((QWORD)hNtdllModule);
+		/*status = RtrHookModule((QWORD)hNtdllModule);
 		if (!SUCCEEDED(status))
 		{
 		    MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
@@ -80,7 +80,7 @@ DllMain(
         if (!SUCCEEDED(status))
         {
             MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
-        }
+        }*/
 
         // Resume all threads
         status = RtrResumeThreads();

@@ -1,7 +1,12 @@
 /**
- * @brief   Defines the `ZydisRegister` enum.
+ * @brief   Defines the `ZydisRegister` datatype.
  */
-typedef enum ZydisRegister_
+typedef ZydisU8 ZydisRegister;
+
+/**
+ * @brief   Values that represent `ZydisRegister` elements.
+ */
+enum ZydisRegisters
 {
     ZYDIS_REGISTER_NONE,
 
@@ -86,9 +91,6 @@ typedef enum ZydisRegister_
     ZYDIS_REGISTER_ST5,
     ZYDIS_REGISTER_ST6,
     ZYDIS_REGISTER_ST7,
-    ZYDIS_REGISTER_X87CONTROL,
-    ZYDIS_REGISTER_X87STATUS,
-    ZYDIS_REGISTER_X87TAG,
     // Floating point multimedia registers
     ZYDIS_REGISTER_MM0,
     ZYDIS_REGISTER_MM1,
@@ -286,7 +288,7 @@ typedef enum ZydisRegister_
      */
     ZYDIS_REGISTER_MAX_VALUE = ZYDIS_REGISTER_XCR0,
     /**
-     * @brief   The minimum number of bits required to represent all values of this enum.
+     * @brief   Minimum amount of bits required to store a value of this enum.
      */
-    ZYDIS_REGISTER_REQUIRED_BITS = ZYAN_BITS_TO_REPRESENT(ZYDIS_REGISTER_MAX_VALUE)
-} ZydisRegister;
+    ZYDIS_REGISTER_MIN_BITS  = 0x0008
+};

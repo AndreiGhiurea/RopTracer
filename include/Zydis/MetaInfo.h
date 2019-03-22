@@ -32,9 +32,8 @@
 #ifndef ZYDIS_METAINFO_H
 #define ZYDIS_METAINFO_H
 
-#include <ZydisExportConfig.h>
-#include <Zycore/Defines.h>
-#include <Zycore/Types.h>
+#include <Zydis/Defines.h>
+#include <Zydis/CommonTypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,27 +56,27 @@ extern "C" {
  *
  * @param   category    The instruction category.
  *
- * @return  The instruction category string or `ZYAN_NULL`, if an invalid category was passed.
+ * @return  The instruction category string or @c NULL, if an invalid category was passed.
  */
 ZYDIS_EXPORT const char* ZydisCategoryGetString(ZydisInstructionCategory category);
 
 /**
  * @brief   Returns the specified isa-set string.
  *
- * @param   isa_set The isa-set.
+ * @param   isaSet  The isa-set.
  *
- * @return  The isa-set string or `ZYAN_NULL`, if an invalid isa-set was passed.
+ * @return  The isa-set string or @c NULL, if an invalid isa-set was passed.
  */
-ZYDIS_EXPORT const char* ZydisISASetGetString(ZydisISASet isa_set);
+ZYDIS_EXPORT const char* ZydisISASetGetString(ZydisISASet isaSet);
 
 /**
  * @brief   Returns the specified isa-extension string.
  *
- * @param   isa_ext The isa-extension.
+ * @param   isaExt  The isa-extension.
  *
- * @return  The isa-extension string or `ZYAN_NULL`, if an invalid isa-extension was passed.
+ * @return  The isa-extension string or @c NULL, if an invalid isa-extension was passed.
  */
-ZYDIS_EXPORT const char* ZydisISAExtGetString(ZydisISAExt isa_ext);
+ZYDIS_EXPORT const char* ZydisISAExtGetString(ZydisISAExt isaExt);
 
 /* ============================================================================================== */
 

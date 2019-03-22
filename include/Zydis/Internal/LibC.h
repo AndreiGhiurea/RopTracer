@@ -2,7 +2,7 @@
 
   Zyan Disassembler Library (Zydis)
 
-  Original Author : Florian Bernd
+  Original Author : Joel Hoener
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,67 +24,59 @@
 
 ***************************************************************************************************/
 
-/**
- * @file
- * @brief   Defines the immutable and storage-efficent `ZydisShortString` struct, which is used to
- *          store strings in the generated tables.
- */
+#ifndef ZYDIS_INTERNAL_LIBC_H
+#define ZYDIS_INTERNAL_LIBC_H
 
-#ifndef ZYDIS_SHORTSTRING_H
-#define ZYDIS_SHORTSTRING_H
+#include <Zydis/Defines.h>
 
-#include <ZydisExportConfig.h>
-#include <Zycore/Defines.h>
-#include <Zycore/Types.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef ZYDIS_NO_LIBC
 
 /* ============================================================================================== */
-/* Enums and types                                                                                */
+/* LibC is available                                                                              */
 /* ============================================================================================== */
 
-#pragma pack(push, 1)
+#   include <string.h>
+#   define ZydisMemoryCopy memcpy
+#   define ZydisMemorySet  memset
+#   define ZydisStrLen     strlen
 
-/**
- * @brief   Defines the `ZydisShortString` struct.
- *
- * This compact struct is mainly used for internal string-tables to save up some bytes.
- *
- * All fields in this struct should be considered as "private". Any changes may lead to unexpected
- * behavior.
+#else
+
+/* ============================================================================================== */
+/* No LibC available, use our own functions                                                       */
+/* ============================================================================================== */
+
+/*
+ * These implementations are by no means optimized and will be outperformed by pretty much any
+ * libc implementation out there. We do not aim towards providing competetive implementations here,
+ * but towards providing a last resort fallback for environments without a working libc.
  */
-typedef struct ZydisShortString_
+
+ZYDIS_INLINE void* ZydisMemorySet(void* ptr, int value, ZydisUSize num)
 {
-    /**
-     * @brief   The buffer that contains the actual (nullterminated) string.
-    */
-    const char* data;
-    /**
-     * @brief   The length (number of characters) of the string (without 0-termination).
-    */
-    ZyanU8 size;
-} ZydisShortString;
-
-#pragma pack(pop)
-
-/* ============================================================================================== */
-/* Macros                                                                                         */
-/* ============================================================================================== */
-
-/**
- * @brief   Declares a `ZydisShortString` from a static C-style string.
- *
- * @param   string  The C-string constant.
- */
-#define ZYDIS_MAKE_SHORTSTRING(string) \
-    { string, sizeof(string) - 1 }
-
-/* ============================================================================================== */
-
-#ifdef __cplusplus
+    ZydisU8 c = value & 0xff;
+    for (ZydisUSize i = 0; i < num; ++i) ((ZydisU8*)ptr)[i] = c;
+    return ptr;
 }
+
+ZYDIS_INLINE void* ZydisMemoryCopy(void* dst, const void* src, ZydisUSize num)
+{
+    for (ZydisUSize i = 0; i < num; ++i)
+    {
+        ((ZydisU8*)dst)[i] = ((const ZydisU8*)src)[i];
+    }
+    return dst;
+}
+
+ZYDIS_INLINE ZydisUSize ZydisStrLen(const char* str)
+{
+    const char *s;
+    for (s = str; *s; ++s);
+    return s - str;
+}
+
+/* ============================================================================================== */
+
 #endif
 
-#endif /* ZYDIS_SHORTSTRING_H */
+#endif /* ZYDIS_INTERNAL_LIBC_H */

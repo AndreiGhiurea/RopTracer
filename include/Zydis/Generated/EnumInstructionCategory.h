@@ -1,7 +1,12 @@
 /**
- * @brief   Defines the `ZydisInstructionCategory` enum.
+ * @brief   Defines the `ZydisInstructionCategory` datatype.
  */
-typedef enum ZydisInstructionCategory_
+typedef ZydisU8 ZydisInstructionCategory;
+
+/**
+ * @brief   Values that represent `ZydisInstructionCategory` elements.
+ */
+enum ZydisInstructionCategories
 {
     ZYDIS_CATEGORY_INVALID,
     ZYDIS_CATEGORY_ADOX_ADCX,
@@ -23,7 +28,6 @@ typedef enum ZydisInstructionCategory_
     ZYDIS_CATEGORY_BROADCAST,
     ZYDIS_CATEGORY_CALL,
     ZYDIS_CATEGORY_CET,
-    ZYDIS_CATEGORY_CLDEMOTE,
     ZYDIS_CATEGORY_CLFLUSHOPT,
     ZYDIS_CATEGORY_CLWB,
     ZYDIS_CATEGORY_CLZERO,
@@ -53,10 +57,8 @@ typedef enum ZydisInstructionCategory_
     ZYDIS_CATEGORY_LZCNT,
     ZYDIS_CATEGORY_MISC,
     ZYDIS_CATEGORY_MMX,
-    ZYDIS_CATEGORY_MOVDIR,
     ZYDIS_CATEGORY_MPX,
     ZYDIS_CATEGORY_NOP,
-    ZYDIS_CATEGORY_PADLOCK,
     ZYDIS_CATEGORY_PCLMULQDQ,
     ZYDIS_CATEGORY_PCONFIG,
     ZYDIS_CATEGORY_PKU,
@@ -93,7 +95,6 @@ typedef enum ZydisInstructionCategory_
     ZYDIS_CATEGORY_VFMA,
     ZYDIS_CATEGORY_VPCLMULQDQ,
     ZYDIS_CATEGORY_VTX,
-    ZYDIS_CATEGORY_WAITPKG,
     ZYDIS_CATEGORY_WIDENOP,
     ZYDIS_CATEGORY_X87_ALU,
     ZYDIS_CATEGORY_XOP,
@@ -105,7 +106,7 @@ typedef enum ZydisInstructionCategory_
      */
     ZYDIS_CATEGORY_MAX_VALUE = ZYDIS_CATEGORY_XSAVEOPT,
     /**
-     * @brief   The minimum number of bits required to represent all values of this enum.
+     * @brief   Minimum amount of bits required to store a value of this enum.
      */
-    ZYDIS_CATEGORY_REQUIRED_BITS = ZYAN_BITS_TO_REPRESENT(ZYDIS_CATEGORY_MAX_VALUE)
-} ZydisInstructionCategory;
+    ZYDIS_CATEGORY_MIN_BITS  = 0x0007
+};
