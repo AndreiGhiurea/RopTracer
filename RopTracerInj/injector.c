@@ -27,7 +27,7 @@ InjectDllIntoProcess(
     {
         printf("GetFullPathName failed: %d\n", GetLastError());
     }
-
+    
     printf("Full DLL path: %s\n", fName);
 
     // Reserve memory for dll's path in the process' memory
@@ -80,15 +80,6 @@ InjectDllIntoProcess(
     }
 
     printf("Remote thread id: %d\n", threadId);
-
-    DWORD lphInjected;
-    // Locate address our payload was loaded
-    if (hThread != 0) {
-        WaitForSingleObject(hThread, INFINITE);
-        GetExitCodeThread(hThread, (LPDWORD)&lphInjected);
-    }
-
-    printf("Thread exit code: %d\n", lphInjected);
 
     success = TRUE;
 
