@@ -10,6 +10,7 @@ int main(void)
     BOOL bErr, bFound;
     bErr = bFound = FALSE;
 
+read_name:
     printf("Name of process to inject: ");
     scanf_s("%s", gExeName, 255);
 
@@ -73,6 +74,8 @@ int main(void)
     if (!bFound)
     {
         printf("Process with the given name not found!\n");
+        bErr = bFound = FALSE;
+        goto read_name;
     }
 
     system("pause");
