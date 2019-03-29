@@ -48,7 +48,11 @@ RtrBreakpointHandler(
 
                 // Initialize decoder context
                 ZydisDecoder decoder;
+#ifdef _WIN64
                 ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+#else
+                ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32);
+#endif
 
                 // Initialize formatter
                 ZydisFormatter formatter;
