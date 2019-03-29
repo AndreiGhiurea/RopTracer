@@ -12,13 +12,13 @@ RtrEmulateInstruction(
     {
     case ZYDIS_MNEMONIC_RET:
 #ifdef _WIN64
-		ExceptionInfo->ContextRecord->Rip = *(PQWORD)ExceptionInfo->ContextRecord->Rsp;
-        ExceptionInfo->ContextRecord->Rsp += (QWORD)8;
+        ExceptionInfo->ContextRecord->Rip = *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp;
+        ExceptionInfo->ContextRecord->Rsp += (SIZE_T)8;
 #else
-        ExceptionInfo->ContextRecord->Eip = *(PQWORD)ExceptionInfo->ContextRecord->Esp;
-        ExceptionInfo->ContextRecord->Esp += (QWORD)4;
+        ExceptionInfo->ContextRecord->Eip = *(PSIZE_T)ExceptionInfo->ContextRecord->Esp;
+        ExceptionInfo->ContextRecord->Esp += (SIZE_T)4;
 #endif
-		status = STATUS_SUCCESS;
+        status = STATUS_SUCCESS;
         break;
     default:
         printf("[EMU] Instruction not supported\n");

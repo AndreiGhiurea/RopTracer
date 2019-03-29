@@ -37,7 +37,7 @@ DllMain(
         {
             MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
         }
-        gExeFile.ImageBase = (QWORD)hCurrentModule;
+        gExeFile.ImageBase = (SIZE_T)hCurrentModule;
 
         // Hook RET instructions from all executable sections
         status = RtrHookModule(gExeFile.ImageBase);

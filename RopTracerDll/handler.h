@@ -1,7 +1,7 @@
 #pragma once
 #include "utils.h"
 
-#define TRAP_FLAG_MASK			0x100
+#define TRAP_FLAG_MASK              0x100
 
 LONG WINAPI
 RtrBreakpointHandler(

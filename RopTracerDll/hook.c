@@ -26,7 +26,7 @@ STATUS RtrFreeHooks(VOID)
     return STATUS_SUCCESS;
 }
 
-STATUS RtrUnhookRegion(QWORD Address, DWORD Size)
+STATUS RtrUnhookRegion(SIZE_T Address, DWORD Size)
 {
     LIST_ENTRY *list;
     DWORD oldPageRights = 0, newOldPageRights = 0;
@@ -88,7 +88,7 @@ STATUS RtrUnhookRegion(QWORD Address, DWORD Size)
     return STATUS_SUCCESS;
 }
 
-STATUS RtrHookModule(QWORD ImageBase)
+STATUS RtrHookModule(SIZE_T ImageBase)
 {
     STATUS status;
 
@@ -118,7 +118,7 @@ STATUS RtrHookModule(QWORD ImageBase)
     return STATUS_SUCCESS;
 }
 
-STATUS RtrUnhookModule(QWORD ImageBase)
+STATUS RtrUnhookModule(SIZE_T ImageBase)
 {
     STATUS status;
 
@@ -148,7 +148,7 @@ STATUS RtrUnhookModule(QWORD ImageBase)
     return STATUS_SUCCESS;
 }
 
-STATUS RtrHookRegion(QWORD Address, DWORD Size)
+STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
 {
     DWORD oldPageRights = 0, newOldPageRights = 0;
 

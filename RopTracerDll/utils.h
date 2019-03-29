@@ -20,17 +20,13 @@ typedef unsigned __int8 BOOLEAN, *PBOOLEAN;
 #endif
 
 #ifndef     QWORD
-#ifdef _WIN64
 typedef unsigned __int64 QWORD, *PQWORD;
-#else
-typedef unsigned __int32 QWORD, *PQWORD;
-#endif
 #endif
 
 typedef struct _RET_PATCH {
     LIST_ENTRY Link;
     BOOLEAN Disabled;
-    QWORD Address;
+    SIZE_T Address;
     BYTE InstructionBytes[16];
     ZydisDecodedInstruction Instruction;
 } RET_PATCH, *PRET_PATCH;
@@ -38,8 +34,8 @@ typedef struct _RET_PATCH {
 typedef struct _EXE_FILE {
     DWORD EntryPointRva;
     DWORD TextSectionRva;
-    QWORD ImageBase;
-    QWORD EntryPoint;
+    SIZE_T ImageBase;
+    SIZE_T EntryPoint;
     LIST_ENTRY InstructionPatchList;
 } EXE_FILE, *PEXE_FILE;
 

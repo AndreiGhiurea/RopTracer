@@ -22,7 +22,7 @@ RtrBreakpointHandler(
         {
             PRET_PATCH pInstructionPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
 
-            if ((QWORD)ExceptionInfo->ExceptionRecord->ExceptionAddress == pInstructionPatch->Address)
+            if ((SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress == pInstructionPatch->Address)
             {
                 if (pInstructionPatch->Disabled)
                 {

@@ -1,7 +1,7 @@
 #include "utils.h"
 
-STATUS RtrUnhookModule(QWORD ImageBase);
-STATUS RtrHookModule(QWORD ImageBase);
+STATUS RtrUnhookModule(SIZE_T ImageBase);
+STATUS RtrHookModule(SIZE_T ImageBase);
 STATUS RtrFreeHooks(VOID);
-STATUS RtrHookRegion(QWORD Address, DWORD Length);
-STATUS RtrUnhookRegion(QWORD Address, DWORD Length);
+STATUS RtrHookRegion(SIZE_T Address, DWORD Length);
+STATUS RtrUnhookRegion(SIZE_T Address, DWORD Length);
