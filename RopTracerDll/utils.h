@@ -32,12 +32,7 @@ typedef struct _RET_PATCH {
 } RET_PATCH, *PRET_PATCH;
 
 typedef struct _EXE_FILE {
-    DWORD EntryPointRva;
-    DWORD TextSectionRva;
-    SIZE_T ImageBase;
-    SIZE_T EntryPoint;
-    SIZE_T LastAddr;
-    LIST_ENTRY InstructionPatchList;
+    SIZE_T LastAddr; // For Single-Stepping
     QWORD PatchCount;
 } EXE_FILE, *PEXE_FILE;
 

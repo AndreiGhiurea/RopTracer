@@ -31,9 +31,6 @@ DllMain(
             LOG("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
         }
         
-        // Initialize gExeFile list head for RET patches
-        InitializeListHead(&gExeFile.InstructionPatchList);
-
         // Register critical exception handler
         AddVectoredExceptionHandler(1, RtrBreakpointHandler);
 
@@ -43,10 +40,9 @@ DllMain(
         {
             LOG("[ERROR] GetModuleHandle failed: %d\n", GetLastError());
         }
-        gExeFile.ImageBase = (SIZE_T)hCurrentModule;
 
         // Hook RET instructions from all executable sections
-        status = RtrHookModule(gExeFile.ImageBase);
+        status = RtrHookModule((SIZE_T)hCurrentModule);
         if (!SUCCEEDED(status))
         {
            LOG("[ERROR] RtrHookModule failed: %d\n", GetLastError());
@@ -73,12 +69,6 @@ DllMain(
     }
     else if (DLL_PROCESS_DETACH == _Reason)
     {
-        status = RtrFreeHooks();
-        if (!SUCCEEDED(status))
-        {
-            LOG("[ERROR] RtrFreeHooks failed: %d\n", GetLastError());
-        }
-
         LOG("[INFO] DLL is detaching");
     }
 

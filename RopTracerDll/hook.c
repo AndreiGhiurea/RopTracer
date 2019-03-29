@@ -1,93 +1,6 @@
 #include "hook.h"
 #include "Zydis\DecoderTypes.h"
 
-STATUS RtrFreeHooks(VOID)
-{
-    LIST_ENTRY *list;
-
-    list = gExeFile.InstructionPatchList.Flink;
-    while (list != &gExeFile.InstructionPatchList)
-    {
-        PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
-
-        pRetPatch->Disabled = TRUE;
-        RemoveEntryList(list);
-        list = list->Blink;
-
-        if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
-        {
-            LOG("[ERROR] VirtualFree failed: %d\n", GetLastError());
-            return STATUS_UNSUCCESSFUL;
-        }
-
-        list = list->Flink;
-    }
-
-    return STATUS_SUCCESS;
-}
-
-STATUS RtrUnhookRegion(SIZE_T Address, DWORD Size)
-{
-    LIST_ENTRY *list;
-    DWORD oldPageRights = 0, newOldPageRights = 0;
-
-    // Modify section rights to read/write/execute
-    if (!VirtualProtect(
-        (LPVOID)(Address),
-        Size,
-        PAGE_EXECUTE_READWRITE,
-        &oldPageRights)
-        )
-    {
-        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    list = gExeFile.InstructionPatchList.Flink;
-    while (list != &gExeFile.InstructionPatchList)
-    {
-        PRET_PATCH pRetPatch = CONTAINING_RECORD(list, RET_PATCH, Link);
-
-        if (pRetPatch->Address < Address || pRetPatch->Address >(Address + Size))
-        {
-            goto _continue;
-        }
-
-        pRetPatch->Disabled = TRUE;
-        RemoveEntryList(list);
-        list = list->Blink;
-
-        // Patch original instruction
-        for (int i = 0; i < pRetPatch->Instruction.length; i++)
-        {
-            *((PBYTE)pRetPatch->Address + i) = pRetPatch->InstructionBytes[i];
-        }
-
-        if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
-        {
-            LOG("[ERROR] VirtualFree failed: %d\n", GetLastError());
-            return STATUS_UNSUCCESSFUL;
-        }
-
-    _continue:
-        list = list->Flink;
-    }
-
-    // Restore old page rights
-    if (!VirtualProtect(
-        (LPVOID)(Address),
-        Size,
-        oldPageRights,
-        &newOldPageRights)
-        )
-    {
-        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    return STATUS_SUCCESS;
-}
-
 STATUS RtrHookModule(SIZE_T ImageBase)
 {
     STATUS status;
@@ -113,36 +26,6 @@ STATUS RtrHookModule(SIZE_T ImageBase)
         else
         {
             continue;
-        }
-    }
-
-    return STATUS_SUCCESS;
-}
-
-STATUS RtrUnhookModule(SIZE_T ImageBase)
-{
-    STATUS status;
-
-    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)ImageBase;
-    PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)((PCHAR)pDosHeader + pDosHeader->e_lfanew);
-    PIMAGE_FILE_HEADER pFileHeader = (PIMAGE_FILE_HEADER)&pNtHeaders->FileHeader;
-
-    PIMAGE_SECTION_HEADER pSectionHeader;
-    for (int i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++)
-    {
-        pSectionHeader = (PIMAGE_SECTION_HEADER)((PCHAR)pFileHeader + sizeof(IMAGE_FILE_HEADER) + pFileHeader->SizeOfOptionalHeader + sizeof(IMAGE_SECTION_HEADER) * i);
-        if (pSectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE)
-        {
-            status = RtrUnhookRegion(ImageBase + pSectionHeader->VirtualAddress, pSectionHeader->Misc.VirtualSize);
-            if (!SUCCEEDED(status))
-            {
-                LOG("[ERROR] RtrUnhookRegion failed: 0x%08x\n", status);
-                return STATUS_UNSUCCESSFUL;
-            }
-            else
-            {
-                continue;;
-            }
         }
     }
 
@@ -213,31 +96,8 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
                 continue;
             }
 
-            // Allocate and initialize a RET patch structure for the list
-            PRET_PATCH instructionPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-            if (NULL == instructionPatchEntry)
-            {
-                LOG("[ERORR] VirtualAlloc failed: %d\n", GetLastError());
-                return STATUS_UNSUCCESSFUL;
-            }
-
-            instructionPatchEntry->Address = runtime_address;
-            instructionPatchEntry->Disabled = FALSE;
-            instructionPatchEntry->Instruction = instruction;
-
-            for (int i = 0; i < instruction.length; i++)
-            {
-                instructionPatchEntry->InstructionBytes[i] = *((PBYTE)runtime_address + i);
-            }
-
-            InsertTailList(&gExeFile.InstructionPatchList, &instructionPatchEntry->Link);
-
             // Patch RET with a INT3
             *((PBYTE)runtime_address) = 0xCC; // INT3
-            for (int i = 1; i < instruction.length; i++)
-            {
-                *((PBYTE)runtime_address + i) = 0x90; // NOP
-            }
 
             gExeFile.PatchCount++;
         }
