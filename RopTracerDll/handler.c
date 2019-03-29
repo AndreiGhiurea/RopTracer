@@ -10,7 +10,6 @@ RtrBreakpointHandler(
     DWORD exceptioncode;
     PLIST_ENTRY list;
     BOOL found = FALSE;
-    // STATUS status = STATUS_SUCCESS;
 
     exceptioncode = ExceptionInfo->ExceptionRecord->ExceptionCode;
 
@@ -30,9 +29,9 @@ RtrBreakpointHandler(
                 }
 
 #ifdef _WIN64
-                printf("[TRACER] 0x%016llx - returns to -> 0x%016llx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp);
+                LOG("[TRACER] 0x%016llx - returns to -> 0x%016llx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Rsp);
 #else
-                printf("[TRACER] 0x%08lx - returns to -> 0x%08lx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Esp);
+                LOG("[TRACER] 0x%08lx - returns to -> 0x%08lx\n", (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, *(PSIZE_T)ExceptionInfo->ContextRecord->Esp);
 #endif
 
 #ifdef _WIN64
@@ -44,7 +43,6 @@ RtrBreakpointHandler(
                 rspValue -= 0x64;
 
                 PBYTE codeBuffer = (PBYTE)rspValue;
-                
 
                 // Initialize decoder context
                 ZydisDecoder decoder;
@@ -53,7 +51,6 @@ RtrBreakpointHandler(
 #else
                 ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32);
 #endif
-
                 // Initialize formatter
                 ZydisFormatter formatter;
                 ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
@@ -85,19 +82,26 @@ RtrBreakpointHandler(
                     {
                         // Print current instruction pointer.
 #ifdef _WIN64
-                        printf("[DISASM] 0x%016llx   ", runtime_address);
+                        LOG("[DISASM] 0x%016llx   ", runtime_address);
 #else
-                        printf("[DISASM] 0x%08lx   ", runtime_address);
+                        LOG("[DISASM] 0x%08lx   ", runtime_address);
 #endif
 
                         // Format & print the binary instruction structure to human readable format
                         char mnemonicBuffer[256];
                         ZydisFormatterFormatInstruction(&formatter, &instruction, mnemonicBuffer, sizeof(mnemonicBuffer));
-                        printf("%s\n\n", mnemonicBuffer);
+                        LOG("%s\n\n", mnemonicBuffer);
 
                         if (instruction.mnemonic != ZYDIS_MNEMONIC_CALL)
                         {
-                            printf("[TRACER] ROP Chain Detected. Aborting application.\n");
+                            // Suspends all process threads
+                            status = RtrSuspendThreads();
+                            if (!SUCCEEDED(status))
+                            {
+                                LOG("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
+                            }
+
+                            LOG("[TRACER] ROP Chain Detected. Aborting application.\n");
                             MessageBox(NULL, "ROP Chain Detected. Aborting execution!", "RopTracer", MB_ICONERROR);
                             ExitProcess((UINT)1);
                             goto cleanup_and_exit;
@@ -111,7 +115,7 @@ RtrBreakpointHandler(
                 status = RtrEmulateInstruction(pInstructionPatch->Instruction, ExceptionInfo);
                 if (!SUCCESS(status))
                 {
-                    printf("[ERROR] RtrEmulateInstruction failed!\n");
+                    LOG("[ERROR] RtrEmulateInstruction failed: 0x%08x\n", status);
                 }
 
                 returnValue = EXCEPTION_CONTINUE_EXECUTION;
@@ -125,7 +129,7 @@ cleanup_and_exit:
 
         break;
     case EXCEPTION_SINGLE_STEP:
-        printf("[INFO] Single Stepping\n");
+        LOG("[INFO] Single Stepping\n");
         return EXCEPTION_CONTINUE_EXECUTION;
         break;
     default:

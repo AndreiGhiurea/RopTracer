@@ -22,7 +22,7 @@ DllMain(
         status = RtrSuspendThreads();
         if (!SUCCEEDED(status))
         {
-            printf("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
+            LOG("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
         }
         
         // Initialize gExeFile list head for RET patches
@@ -35,7 +35,7 @@ DllMain(
         HMODULE hCurrentModule = GetModuleHandle(NULL);
         if (NULL == hCurrentModule)
         {
-            MessageBox(NULL, "GetModuleHandle failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+            LOG("[ERROR] GetModuleHandle failed: %d\n", GetLastError());
         }
         gExeFile.ImageBase = (SIZE_T)hCurrentModule;
 
@@ -43,7 +43,7 @@ DllMain(
         status = RtrHookModule(gExeFile.ImageBase);
         if (!SUCCEEDED(status))
         {
-           MessageBox(NULL, "RtrHookModule failed.", "RopTracerDll.dll", MB_ICONERROR);
+           LOG("[ERROR] RtrHookModule failed: %d\n", GetLastError());
         }
 
         _itoa_s(GetCurrentProcessId(), number, 20, 10);
@@ -62,7 +62,7 @@ DllMain(
         status = RtrResumeThreads();
         if (!SUCCEEDED(status))
         {
-            printf("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
+            LOG("[ERROR] RtrSuspendsThreads failed: 0x%08x\n", status);
         }
     }
     else if (DLL_PROCESS_DETACH == _Reason)
@@ -70,10 +70,10 @@ DllMain(
         status = RtrFreeHooks();
         if (!SUCCEEDED(status))
         {
-            MessageBox(NULL, "RtrFreeHooks failed.", "RopTracerDll.dll", MB_ICONERROR);
+            LOG("[ERROR] RtrFreeHooks failed: %d\n", GetLastError());
         }
 
-        MessageBox(NULL, "DLL is detaching", "RopTracerDll.dll", MB_ICONINFORMATION);
+        LOG("[INFO] DLL is detaching");
     }
 
     return TRUE;

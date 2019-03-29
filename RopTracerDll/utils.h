@@ -36,13 +36,22 @@ typedef struct _EXE_FILE {
     DWORD TextSectionRva;
     SIZE_T ImageBase;
     SIZE_T EntryPoint;
+    SIZE_T LastAddr;
     LIST_ENTRY InstructionPatchList;
+    QWORD PatchCount;
 } EXE_FILE, *PEXE_FILE;
 
 extern EXE_FILE gExeFile;
 
 #define STATUS           NTSTATUS
 #define SUCCESS(x)       ((x)>=0)
+
+#ifdef _DEBUG
+    #define LOG(s, ...)             printf(s, __VA_ARGS__)
+#else
+    #define LOG(s, ...)
+#endif // DEBUG
+
 
 // Array of addresses
 #define     STATUS_NON_EXISTENT_ENTRY               ((NTSTATUS)0x10000000)

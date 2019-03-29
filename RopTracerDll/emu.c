@@ -21,7 +21,7 @@ RtrEmulateInstruction(
         status = STATUS_SUCCESS;
         break;
     default:
-        printf("[EMU] Instruction not supported\n");
+        LOG("[EMU] Instruction not supported\n");
         status = STATUS_UNSUCCESSFUL;
         break;
     }

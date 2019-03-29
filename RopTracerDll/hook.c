@@ -16,7 +16,7 @@ STATUS RtrFreeHooks(VOID)
 
         if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
         {
-            MessageBox(NULL, "VirtualFree failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+            LOG("[ERROR] VirtualFree failed: %d\n", GetLastError());
             return STATUS_UNSUCCESSFUL;
         }
 
@@ -39,7 +39,7 @@ STATUS RtrUnhookRegion(SIZE_T Address, DWORD Size)
         &oldPageRights)
         )
     {
-        MessageBox(NULL, "VirtualProtect failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -65,7 +65,7 @@ STATUS RtrUnhookRegion(SIZE_T Address, DWORD Size)
 
         if (!VirtualFree(pRetPatch, 0, MEM_RELEASE))
         {
-            MessageBox(NULL, "VirtualFree failed", "RopTracerDll.dll", MB_ICONERROR);
+            LOG("[ERROR] VirtualFree failed: %d\n", GetLastError());
             return STATUS_UNSUCCESSFUL;
         }
 
@@ -81,7 +81,7 @@ STATUS RtrUnhookRegion(SIZE_T Address, DWORD Size)
         &newOldPageRights)
         )
     {
-        MessageBox(NULL, "VirtualProtect failed", "RopTracerDll.dll", MB_ICONERROR);
+        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -105,9 +105,10 @@ STATUS RtrHookModule(SIZE_T ImageBase)
             status = RtrHookRegion(ImageBase + pSectionHeader->VirtualAddress, pSectionHeader->Misc.VirtualSize);
             if (!SUCCEEDED(status))
             {
-                MessageBox(NULL, "RtrHookRegion failed", "RopTracerDll.dll", MB_ICONERROR);
+                LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
                 return STATUS_UNSUCCESSFUL;
             }
+            LOG("[INFO] Hooked section: %s. Current patch count: %d\n", pSectionHeader->Name, (int)gExeFile.PatchCount);
         }
         else
         {
@@ -135,7 +136,7 @@ STATUS RtrUnhookModule(SIZE_T ImageBase)
             status = RtrUnhookRegion(ImageBase + pSectionHeader->VirtualAddress, pSectionHeader->Misc.VirtualSize);
             if (!SUCCEEDED(status))
             {
-                MessageBox(NULL, "RtrHookRegion failed", "RopTracerDll.dll", MB_ICONERROR);
+                LOG("[ERROR] RtrUnhookRegion failed: 0x%08x\n", status);
                 return STATUS_UNSUCCESSFUL;
             }
             else
@@ -160,7 +161,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
         &oldPageRights)
         )
     {
-        MessageBox(NULL, "VirtualProtect failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -205,12 +206,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
         if (ZYDIS_MNEMONIC_RET == instruction.mnemonic)
         {
             // Special case
-            if (instruction.length != 1
-//                instruction.length == 3 &&
-//                *((PBYTE)runtime_address) == 0xC2 &&
-//                *((PBYTE)runtime_address + 1) == 0x00 &&
-//                *((PBYTE)runtime_address + 2) == 0x00
-                )
+            if (instruction.length != 1)
             {
                 offset += instruction.length;
                 runtime_address += instruction.length;
@@ -221,7 +217,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
             PRET_PATCH instructionPatchEntry = VirtualAlloc(NULL, sizeof(RET_PATCH), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             if (NULL == instructionPatchEntry)
             {
-                MessageBox(NULL, "VirtualAlloc failed. Aborting", "RopTracerDll.dll", MB_ICONERROR);
+                LOG("[ERORR] VirtualAlloc failed: %d\n", GetLastError());
                 return STATUS_UNSUCCESSFUL;
             }
 
@@ -242,6 +238,8 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
             {
                 *((PBYTE)runtime_address + i) = 0x90; // NOP
             }
+
+            gExeFile.PatchCount++;
         }
 
         offset += instruction.length;
@@ -256,7 +254,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
         &newOldPageRights)
         )
     {
-        MessageBox(NULL, "VirtualProtect failed", "RopTracerDll.dll", MB_ICONERROR);
+        LOG("[ERROR] VirtualProtect failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 

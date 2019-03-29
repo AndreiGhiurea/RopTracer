@@ -1,7 +1,6 @@
 #include "utils.h"
 
 EXE_FILE gExeFile = { 0 };
-DWORD gCallCount = { 0 };
 
 STATUS
 RtrSuspendThreads(VOID)
@@ -12,7 +11,7 @@ RtrSuspendThreads(VOID)
     HANDLE hThreadSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, processId);
     if (INVALID_HANDLE_VALUE == hThreadSnapshot)
     {
-        printf("[ERROR] CreateToolhelp32Snapshot failed: %d\n", GetLastError());
+        LOG("[ERROR] CreateToolhelp32Snapshot failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -21,7 +20,7 @@ RtrSuspendThreads(VOID)
 
     if (!Thread32First(hThreadSnapshot, &threadEntry))
     {
-        printf("[ERROR] Thread32First failed: %d\n", GetLastError());
+        LOG("[ERROR] Thread32First failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -34,7 +33,7 @@ RtrSuspendThreads(VOID)
                 threadEntry.th32ThreadID);
             if (!hThread)
             {
-                printf("[ERROR] OpenThread failed: %d\n", GetLastError());
+                LOG("[ERROR] OpenThread failed: %d\n", GetLastError());
             }
 
             SuspendThread(hThread);
@@ -56,7 +55,7 @@ RtrResumeThreads(VOID)
     HANDLE hThreadSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, processId);
     if (INVALID_HANDLE_VALUE == hThreadSnapshot)
     {
-        printf("[ERROR] CreateToolhelp32Snapshot failed: %d\n", GetLastError());
+        LOG("[ERROR] CreateToolhelp32Snapshot failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -65,7 +64,7 @@ RtrResumeThreads(VOID)
 
     if (!Thread32First(hThreadSnapshot, &threadEntry))
     {
-        printf("[ERROR] Thread32First failed: %d\n", GetLastError());
+        LOG("[ERROR] Thread32First failed: %d\n", GetLastError());
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -78,7 +77,7 @@ RtrResumeThreads(VOID)
                 threadEntry.th32ThreadID);
             if (!hThread)
             {
-                printf("[ERROR] OpenThread failed: %d\n", GetLastError());
+                LOG("[ERROR] OpenThread failed: %d\n", GetLastError());
             }
 
             ResumeThread(hThread);
