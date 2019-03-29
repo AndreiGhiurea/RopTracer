@@ -18,6 +18,12 @@ DllMain(
   
     if (DLL_PROCESS_ATTACH == _Reason)
     {
+#ifdef _DEBUG
+        AllocConsole();
+        FILE* fp;
+        freopen_s(&fp, "CONOUT$", "w", stdout);
+#endif
+
         // Suspends all process threads
         status = RtrSuspendThreads();
         if (!SUCCEEDED(status))
