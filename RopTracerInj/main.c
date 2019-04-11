@@ -58,11 +58,11 @@ read_name:
             if (strcmp(gExeName, szProcessName) == 0)
             {
                 bFound = TRUE;
-                printf("Found %s - (PID: %u)\n", szProcessName, aProcesses[i]);
-                printf("Trying to inject DLL!\n");
+                printf("[INFO] Found %s - (PID: %u)\n", szProcessName, aProcesses[i]);
+                printf("[INFO] Trying to inject DLL!\n");
 
                 bErr = InjectDllIntoProcess(hProcess, DLL_NAME);
-                printf("Injection %s\n", bErr ? "Succeeded" : "Failed");
+                printf("[INFO] Injection %s\n", bErr ? "Succeeded" : "Failed");
                 break;
             }
 
@@ -73,7 +73,7 @@ read_name:
 
     if (!bFound)
     {
-        printf("Process with the given name not found!\n");
+        printf("[ERROR] Process with the given name not found!\n");
         bErr = bFound = FALSE;
         goto read_name;
     }
