@@ -1,5 +1,6 @@
 #include "injector.h"
 #include <stdio.h>
+#include "ntapi.h"
 #include <Psapi.h>
 
 BOOLEAN
@@ -8,41 +9,102 @@ InjectDllIntoProcess(
     _In_ const PCHAR DllPath
 )
 {
-    CHAR fName[MAX_PATH] = { 0 };
-    PVOID pProcessMem = NULL;
+    NT_API ntApi = { 0 };
     HANDLE hThread = NULL;
+    DWORD pathLen;
+    PCHAR pDllPath;
     HMODULE hKernel32 = NULL;
     LPTHREAD_START_ROUTINE pLoadLib;
     DWORD threadId;
     BOOLEAN success = TRUE;
+    LARGE_INTEGER liSizeOfSection;
+    HANDLE hSection;
+    NTSTATUS status;
+    LPVOID pDllPatchAttacker, pDllPatchTarget;
+    SIZE_T viewSize = 0;
 
-    if (strlen(DllPath) >= sizeof(fName))
+    pDllPatchAttacker = pDllPatchTarget = NULL;
+
+    printf("[INFO] DLL Name: %s\n", DllPath);
+
+    if (strlen(DllPath) >= MAX_PATH)
     {
-        printf("Dll path too big!\n");
+        printf("[ERROR] Dll path too big!\n");
         success = FALSE;
         goto cleanup_and_exit;
     }
 
-    if (!GetFullPathName(DllPath, MAX_PATH, fName, NULL))
-    {
-        printf("GetFullPathName failed: %d\n", GetLastError());
-    }
-    
-    printf("Full DLL path: %s\n", fName);
+    pathLen = (DWORD)(GetCurrentDirectoryA(0, NULL) + strlen(DllPath) + 2);
 
-    // Reserve memory for dll's path in the process' memory
-    pProcessMem = VirtualAllocEx(Process, NULL, strlen(fName) + 1, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-    if (NULL == pProcessMem)
+    pDllPath = (PCHAR)malloc(pathLen);
+
+    GetCurrentDirectoryA(pathLen, pDllPath);
+
+    strcat_s(pDllPath, pathLen, "\\");
+
+    strcat_s(pDllPath, pathLen, DllPath);
+
+    printf("[INFO] Full DLL Path: %s\n", pDllPath);
+
+    // Find ntdll api.
+    if (!NtApiFindAll(&ntApi))
     {
-        printf("VirtualAllocEx failed: %d\n", GetLastError());
+        printf("[ERROR] NtApiInit failed!\n");
         success = FALSE;
         goto cleanup_and_exit;
     }
 
-    // Write in process' memory dll's path
-    if (!WriteProcessMemory(Process, pProcessMem, fName, strlen(fName) + 1, NULL))
+    // Size for the first section, dll path
+    liSizeOfSection.HighPart = 0;
+    liSizeOfSection.LowPart = pathLen;
+
+    // Create a new section for dll path
+    status = ntApi.NtCreateSection(&hSection, SECTION_ALL_ACCESS,
+        NULL, &liSizeOfSection, PAGE_EXECUTE_READWRITE, SEC_COMMIT, NULL);
+    if (!SUCCEEDED(status))
     {
-        printf("WriteProcessMemory failed: %d\n", GetLastError());
+        printf("[ERROR] NtCreateSection failed: 0x%08x\n", status);
+        success = FALSE;
+        goto cleanup_and_exit;
+    }
+
+    // Map view of section for current process
+    status = ntApi.NtMapViewOfSection(hSection, GetCurrentProcess(),
+        &pDllPatchAttacker, 0, 0, 0, &viewSize, ViewShare, 0, PAGE_EXECUTE_READWRITE);
+    if (!SUCCEEDED(status))
+    {
+        printf("[ERROR] Attacker NtMapViewOfSection failed: 0x%08x\n", status);
+        success = FALSE;
+        goto cleanup_and_exit;
+    }
+
+    // Map view of section for target process
+    status = ntApi.NtMapViewOfSection(hSection, Process,
+        &pDllPatchTarget, 0, 0, 0, &viewSize, ViewShare, 0, PAGE_EXECUTE_READWRITE);
+    if (!SUCCEEDED(status))
+    {
+        printf("[ERROR] Target NtMapViewOfSection failed: 0x%08x\n", status);
+        success = FALSE;
+        goto cleanup_and_exit;
+    }
+
+    // Copy payload to section of memory
+    memcpy(pDllPatchAttacker, pDllPath, pathLen);
+
+    // Unmap memory in the current process
+    status = ntApi.NtUnmapViewOfSection(GetCurrentProcess(), pDllPatchAttacker);
+    if (!SUCCEEDED(status))
+    {
+        printf("[ERROR] NtUnmapViewOfSection failed: 0x%08x\n", status);
+        success = FALSE;
+        goto cleanup_and_exit;
+    }
+
+    // Close section
+    status = ntApi.NtClose(hSection);
+    if (!SUCCEEDED(status))
+    {
+        printf("[ERROR] NtClose failed: 0x%08x\n", status);
         success = FALSE;
         goto cleanup_and_exit;
     }
@@ -57,21 +119,21 @@ InjectDllIntoProcess(
         goto cleanup_and_exit;
     }
 
-    printf("Kernel32 found @ %p\n", hKernel32);
+    printf("[INFO] kernel32.dll found @ %p\n", hKernel32);
 
     // Get address of LoadLibrary
     pLoadLib = (LPTHREAD_START_ROUTINE)GetProcAddress(hKernel32, LOADLIBRARYA_NAME);
     if (NULL == pLoadLib)
     {
-        printf("GetProcAddress failed: %d\n", GetLastError());
+        printf("[ERROR] GetProcAddress failed: %d\n", GetLastError());
         success = FALSE;
         goto cleanup_and_exit;
     }
 
-    printf("LoadLibraryA found @ %p\n\n", pLoadLib);
+    printf("[INFO] LoadLibraryA found @ %p\n\n", pLoadLib);
 
     // Create a remote thread starting at LoadLibrary
-    hThread = CreateRemoteThread(Process, NULL, 0, pLoadLib, pProcessMem, 0, &threadId);
+    hThread = CreateRemoteThread(Process, NULL, 0, pLoadLib, pDllPatchTarget, 0, &threadId);
     if (NULL == hThread)
     {
         printf("CreateRemoteThread failed: %d\n", GetLastError());
@@ -79,19 +141,22 @@ InjectDllIntoProcess(
         goto cleanup_and_exit;
     }
 
-    printf("Remote thread id: %d\n", threadId);
+    printf("[INFO] Remote Thread ID: %d\n", threadId);
 
+    // Unmap memory in the current process
+    status = ntApi.NtUnmapViewOfSection(Process, pDllPatchTarget);
+    if (!SUCCEEDED(status))
+    {
+        printf("[ERROR] NtUnmapViewOfSection failed: 0x%08x\n", status);
+        success = FALSE;
+        goto cleanup_and_exit;
+    }
     success = TRUE;
 
 cleanup_and_exit:
     if (NULL != hThread)
     {
         CloseHandle(hThread);
-    }
-
-    if (NULL != pProcessMem)
-    {
-        VirtualFreeEx(Process, pProcessMem, 0, MEM_FREE);
     }
 
     return success;
