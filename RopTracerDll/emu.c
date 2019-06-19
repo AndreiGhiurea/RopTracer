@@ -8,6 +8,7 @@ RtrEmulateInstruction(
 {
     STATUS status;
 
+    Instruction.mnemonic = ZYDIS_MNEMONIC_RET;
     switch (Instruction.mnemonic)
     {
     case ZYDIS_MNEMONIC_RET:
