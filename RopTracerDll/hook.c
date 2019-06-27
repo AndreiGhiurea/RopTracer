@@ -1,6 +1,8 @@
 #include "hook.h"
 #include "Zydis\DecoderTypes.h"
 
+extern int _retHandler();
+
 STATUS RtrHookModule(SIZE_T ImageBase)
 {
     STATUS status;
@@ -39,7 +41,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
     // Modify section rights to read/write/execute
     if (!VirtualProtect(
         (LPVOID)(Address),
-        Size,
+        Size + 12,
         PAGE_EXECUTE_READWRITE,
         &oldPageRights)
         )
@@ -96,8 +98,21 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
                 continue;
             }
 
-            // Patch RET with a INT3
-            *((PBYTE)runtime_address) = 0xCC; // INT3
+            QWORD handler = (QWORD)_retHandler; 
+
+            // Patch RET with a JMP
+            // 48 b9 ff ff ff ff ff ff ff 7f    movabs rcx, 0x7fffffffffffffff
+            // ff e1                            jmp    rcx
+            BYTE buffer[12] = { 0x48, 0xB9, 0x00, 0x00, 0x00, 0x00 , 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE1};
+            for (int i = 0; i < 8; i++)
+            {
+                buffer[i + 2] = *((PBYTE)&handler + i);
+            }
+            
+            for (int i = 0; i < 12; i++)
+            {
+                *((PBYTE)runtime_address + i) = buffer[i];
+            }
 
             gExeFile.PatchCount++;
         }
@@ -109,7 +124,7 @@ STATUS RtrHookRegion(SIZE_T Address, DWORD Size)
     // Restore old page rights
     if (!VirtualProtect(
         (LPVOID)(Address),
-        Size,
+        Size + 12,
         oldPageRights,
         &newOldPageRights)
         )

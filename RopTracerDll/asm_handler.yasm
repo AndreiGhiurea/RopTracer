@@ -1,0 +1,32 @@
+[bits 64]
+
+global _retHandler
+extern RtrVerifyRet
+
+section .text 
+    _retHandler:
+        push rax
+        push rcx
+        push rbx
+        push rdx
+        push rdi
+        push rsi
+
+        xor     rcx, rcx
+        mov     rcx, [rsp + 6*8] 
+        sub     rsp, 0x20
+        call RtrVerifyRet ; Should terminate process if RET is invalid
+        add     rsp, 0x20
+
+        cmp rax, 0
+        je _goodRet
+
+    _goodRet:
+        pop rsi
+        pop rdi
+        pop rdx
+        pop rbx
+        pop rcx
+        pop rax
+
+        ret

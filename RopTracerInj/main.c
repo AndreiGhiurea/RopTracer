@@ -11,8 +11,10 @@ int main(void)
     bErr = bFound = FALSE;
 
 read_name:
-    printf("Name of process to inject: ");
-    scanf_s("%s", gExeName, 255);
+    // printf("Name of process to inject: ");
+    // scanf_s("%s", gExeName, 255);
+
+    strcpy_s(gExeName, 255, "RopTracerVuln.exe");
 
     // Get the list of process identifiers.
     DWORD aProcesses[1024], cbNeeded, cProcesses;
@@ -78,6 +80,6 @@ read_name:
         goto read_name;
     }
 
-    system("pause");
+    // system("pause");
     return 0;
 }

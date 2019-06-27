@@ -7,3 +7,8 @@ LONG WINAPI
 RtrBreakpointHandler(
     _In_ PEXCEPTION_POINTERS ExceptionInfo
     );
+
+NTSTATUS __stdcall  
+RtrVerifyRet(
+    _In_ QWORD VerifyAddress
+    );

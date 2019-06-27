@@ -32,7 +32,7 @@ DllMain(
         }
         
         // Register critical exception handler
-        AddVectoredExceptionHandler(1, RtrBreakpointHandler);
+        // AddVectoredExceptionHandler(1, RtrBreakpointHandler);
 
         // Get current .exe image base address
         HMODULE hCurrentModule = GetModuleHandle(NULL);
@@ -58,7 +58,7 @@ DllMain(
         strcat_s(text, 256, ")");
         strcat_s(text, 256, ". Application protected against ROP Chain exploits!");
 
-        MessageBox(NULL, text, "RopTracerDll.dll", MB_ICONINFORMATION);
+        // MessageBox(NULL, text, "RopTracerDll.dll", MB_ICONINFORMATION);
 
         // Resume all threads
         status = RtrResumeThreads();
